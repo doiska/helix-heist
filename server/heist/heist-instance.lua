@@ -37,3 +37,29 @@ function BankHeist.new(id, config, leaderId)
 
     return self
 end
+
+function BankHeist:canTransitionTo(newState)
+    local validTransitions = {
+        [HeistStates.IDLE] = { HeistStates.PREPARED },
+        [HeistStates.PREPARED] = { HeistStates.IDLE, HeistStates.ENTRY, HeistStates.FAILED },
+        [HeistStates.ENTRY] = { HeistStates.VAULT_LOCKED, HeistStates.FAILED },
+        [HeistStates.VAULT_LOCKED] = { HeistStates.VAULT_OPEN, HeistStates.FAILED },
+        [HeistStates.VAULT_OPEN] = { HeistStates.LOOTING, HeistStates.FAILED },
+        [HeistStates.LOOTING] = { HeistStates.ESCAPE, HeistStates.FAILED },
+        [HeistStates.ESCAPE] = { HeistStates.COMPLETE, HeistStates.FAILED },
+    }
+
+    local allowed = validTransitions[self.state]
+
+    if not allowed then
+        return false
+    end
+
+    for _, allowedState in ipairs(allowed) do
+        if allowedState == newState then
+            return true
+        end
+    end
+
+    return false
+end
