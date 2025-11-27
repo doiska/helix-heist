@@ -1,6 +1,19 @@
+---@class BankHeist
+--- @field id string
+--- @field config BankConfig
+--- @field state HeistStates
+--- @field participants string[]
+--- @field leader string
+--- @field timers table
+--- @field startTime number
+--- @field metadata { alarmTriggered: boolean, policeNotified: boolean, vaultOpenTime: number?, doorsBypassed: string[], minigameAttempts: number, totalLootCollected: number, failureReason: string? }
+--- @field lootStatus table
 BankHeist = {}
 BankHeist.__index = BankHeist
 
+--- @param id string
+--- @param leaderId string
+--- @param config BankConfig
 function BankHeist.new(id, config, leaderId)
     local self = setmetatable({}, BankHeist)
 
@@ -10,6 +23,7 @@ function BankHeist.new(id, config, leaderId)
     self.participants = {
         leaderId
     }
+
     self.leader = leaderId
     self.timers = {}
     self.startTime = nil
@@ -24,6 +38,7 @@ function BankHeist.new(id, config, leaderId)
     }
 
     self.lootStatus = {}
+
     if config.vault and config.vault.loot then
         for i, loot in ipairs(config.vault.loot) do
             self.lootStatus[i] = {
@@ -79,4 +94,44 @@ function BankHeist:transitionTo(newState, reason)
     end
 
     return true, oldState
+end
+
+function BankHeist:addParticipant(playerId)
+    for _, pid in ipairs(self.participants) do
+        if pid == playerId then
+            return false
+        end
+    end
+
+    table.insert(self.participants, playerId)
+    print("Player .. " .. playerId .. " joined")
+
+    if #self.participants == self.config.start.minPlayers then
+        self:transitionTo(HeistStates.PREPARED)
+    end
+
+    return true
+end
+
+function BankHeist:removeParticipant(playerId)
+    for i, pid in ipairs(self.participants) do
+        if pid == playerId then
+            table.remove(self.participants, i)
+            break
+        end
+    end
+
+    for _, loot in pairs(self.lootStatus) do
+        -- TODO: should we give the loot to someone else?
+        if loot.currentUser == playerId then
+            loot.currentUser = nil
+        end
+    end
+
+    if playerId == self.leader then
+        -- TODO: promote a new leader like a lobby system
+        self:transitionTo(HeistStates.FAILED, "All participants left")
+    end
+
+    -- TODO: handle if all players leave
 end

@@ -3,26 +3,22 @@
 ---@field yaw number
 ---@field roll number
 
----@param pitch number
----@param yaw number
----@param roll number
----@return Rotator
-function Rotator(pitch, yaw, roll) end
+---@type fun(pitch: number, yaw: number, roll: number): Rotator
+Rotator = Rotator
+
 
 ---@class Vector
 ---@field X number
 ---@field Y number
 ---@field Z number
 
----@param X number
----@param Y number
----@param Z number
----@return Vector
-function Vector(X, Y, Z) end
+---@type fun(X: number, Y: number, Z: number): Vector
+Vector = Vector
+
 
 ---@class Timer
 Timer = {}
 
----@param callback function
+---@param callback fun()
 ---@param milliseconds number
 function Timer.SetTimeout(callback, milliseconds) end
