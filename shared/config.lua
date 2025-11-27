@@ -12,6 +12,9 @@ Config.Persistence = {
     }
 }
 
+
+
+---@type BankCfg
 Config.Banks = {
     central = {
         label = "Central Bank",
@@ -22,20 +25,11 @@ Config.Banks = {
         security = {
             doors = {
                 {
-                    entity = "/HelixDoors/Blueprints/BP_Door_Rotating.BP_Door_Rotating",
+                    entity = "/Game/HelixDoors/Blueprints/BP_Door_Rotating.BP_Door_Rotating_C",
                     lockType = nil, -- Laptop to solve the game
-                    location = Vector(1119.21, -688.387, 100.0)
+                    location = Vector(1119.21, -688.387, 100.0),
+                    rotation = Rotator(0, 0, 0)
                 },
-                {
-                    entity = "",
-                    lockType = "lockpick", -- Lockpick required,
-                    location = Vector4()
-                },
-                {
-                    entity = "",
-                    lockType = "",
-                    location = vector4("")
-                }
             },
             alarm = {
                 silentAlarmChance = 30,
@@ -43,7 +37,7 @@ Config.Banks = {
             }
         },
         vault = {
-            location = Vector4(),
+            location = Vector(1119.21, -688.387, 100.0),
             openDuration = 3 * 60, -- Duration that the vault will stay open
             policeAutoArriveInSeconds = 3 * 60,
             minigame = {
@@ -55,8 +49,18 @@ Config.Banks = {
                 }
             },
             loot = {
-                { entity = "", location = vector4(), maxUses = 1, channelingTimeInSeconds = 30 },
-                { entity = "", location = vector4(), maxUses = 1, channelingTimeInSeconds = 5 }
+                {
+                    entity = "/Game/QBCore/Meshes/SM_ATM.SM_ATM",
+                    location = Vector(1119.21, -688.387, 100.0),
+                    maxUses = 1,
+                    channelingTimeInSeconds = 30
+                },
+                {
+                    entity = "",
+                    location = Vector(1119.21, -688.387, 100.0),
+                    maxUses = 1,
+                    channelingTimeInSeconds = 5
+                }
             }
         },
         escape = {
