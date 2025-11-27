@@ -63,3 +63,20 @@ function BankHeist:canTransitionTo(newState)
 
     return false
 end
+
+function BankHeist:transitionTo(newState, reason)
+    local oldState = self.state
+
+    if not self:canTransitionTo(newState) then
+        return false, nil
+    end
+
+    self.state = newState
+
+    if newState == HeistStates.FAILED and reason then
+        -- TODO: add callback or event instead of reason?
+        self.metadata.failureReason = reason
+    end
+
+    return true, oldState
+end
