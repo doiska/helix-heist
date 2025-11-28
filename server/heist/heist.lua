@@ -1,3 +1,16 @@
+---@enum HeistStates
+HeistStates = {
+    IDLE = "IDLE",
+    PREPARED = "PREPARED",
+    ENTRY = "ENTRY",
+    VAULT_LOCKED = "VAULT_LOCKED",
+    VAULT_OPEN = "VAULT_OPEN",
+    LOOTING = "LOOTING",
+    ESCAPE = "ESCAPE",
+    COMPLETE = "COMPLETE",
+    FAILED = "FAILED"
+}
+
 ---@class BankHeist
 --- @field id string
 --- @field config BankConfig
@@ -10,6 +23,7 @@
 --- @field startedAt number?
 --- @field finishedAt number?
 --- @field loot { status: table, playerTotals: table<string, number> }
+--- @field minigame { sequence: number[], attempts: { playerId: string, guess: number[], result: { correct: number, present: number } }[] }?
 --- @field metadata { alarmTriggered: boolean, policeNotified: boolean, vaultOpenTime: number?, doorsBypassed: string[], minigameAttempts: number }
 BankHeist = {}
 BankHeist.__index = BankHeist
@@ -67,6 +81,7 @@ function BankHeist:broadcastEvent(event, ...)
     end
 end
 
+-- no private fn in lua?
 function BankHeist:canTransitionTo(newState)
     local validTransitions = {
         [HeistStates.IDLE] = { HeistStates.PREPARED },
@@ -110,9 +125,74 @@ function BankHeist:transitionTo(newState, reason)
         self.finishedAt = os.time()
     end
 
-    print(string.format('transitionTo: %s -> (%s, %s)', oldState, newState, reason))
+    self:onStateEnter(newState, oldState)
 
     return true
+end
+
+function BankHeist:onStateEnter(newState, oldState)
+    if newState == HeistStates.ENTRY then
+        if not self.config.security or not self.config.security.alarm then
+            return
+        end
+
+        local alarmChance = self.config.security.alarm.silentAlarmChance or 0
+        if math.random(1, 100) > alarmChance then
+            return
+        end
+
+        local delay = self.config.security.alarm.silentAlarmDelayInSeconds or 0
+        self:scheduleSilentAlarm(delay)
+        return
+    end
+
+    if newState == HeistStates.VAULT_OPEN then
+        self.metadata.vaultOpenTime = os.time()
+
+        if self.config.vault and self.config.vault.openDuration then
+            self:startTimer("vaultClose", self.config.vault.openDuration, function()
+                self:transitionTo(HeistStates.ESCAPE)
+            end)
+        end
+
+        if self.config.vault and self.config.vault.policeAutoArriveInSeconds then
+            self:startTimer("policeArrival", self.config.vault.policeAutoArriveInSeconds, function()
+                self:alertPolice(true)
+            end)
+        end
+
+        self:transitionTo(HeistStates.LOOTING)
+        return
+    end
+
+    if newState == HeistStates.ESCAPE then
+        self:clearTimer("vaultClose")
+
+        if not self.config.escape then
+            return
+        end
+
+        if self.config.escape.condition ~= "police" or not self.config.escape.police then
+            return
+        end
+
+        self:startTimer("escapeDeadline", self.config.escape.police.durationInSeconds, function()
+            self:transitionTo(HeistStates.FAILED, "Failed to escape in time")
+        end)
+        return
+    end
+
+    if newState == HeistStates.COMPLETE then
+        self:distributeRewards()
+        self:cleanup()
+        return
+    end
+
+    if newState == HeistStates.FAILED then
+        print(string.format("[Heist:%s] Failed", self.id))
+        self:cleanup()
+        return
+    end
 end
 
 function BankHeist:addParticipant(playerId)
@@ -233,4 +313,64 @@ function BankHeist:completeLootCollection(lootIndex, playerId)
             heist = heistTotal
         }
     })
+end
+
+function BankHeist:startTimer(name, duration, callback)
+    if self.timers[name] then
+        self:clearTimer(name)
+    end
+
+    local timerId = Timer.SetTimeout(callback, duration * 1000)
+    self.timers[name] = timerId
+end
+
+function BankHeist:clearTimer(name)
+    if not self.timers[name] then
+        return
+    end
+
+    Timer.ClearTimeout(self.timers[name])
+    self.timers[name] = nil
+end
+
+function BankHeist:scheduleSilentAlarm(delay)
+    self:startTimer("silentAlarm", delay, function()
+        self.metadata.alarmTriggered = true
+        self:alertPolice(false)
+    end)
+end
+
+function BankHeist:alertPolice(loud)
+    if self.metadata.policeNotified then
+        return
+    end
+
+    self.metadata.policeNotified = true
+
+    local notificationData = {
+        id = self.id,
+        location = self.config.vault.location,
+        participantCount = #self.participants,
+        alarmType = loud and "LOUD" or "SILENT",
+        timestamp = os.time()
+    }
+
+    -- TODO: notificacao client side
+end
+
+function BankHeist:distributeRewards()
+    -- TODO: add items/cash to players - equally?
+end
+
+function BankHeist:cleanup()
+    for timerName, _ in pairs(self.timers) do
+        self:clearTimer(timerName)
+    end
+
+    for lootIndex, _ in pairs(self.lootTimers) do
+        if self.lootTimers[lootIndex] then
+            Timer.ClearTimeout(self.lootTimers[lootIndex])
+            self.lootTimers[lootIndex] = nil
+        end
+    end
 end
