@@ -5,9 +5,12 @@
 --- @field participants string[]
 --- @field leader string
 --- @field timers table
---- @field startTime number
---- @field metadata { alarmTriggered: boolean, policeNotified: boolean, vaultOpenTime: number?, doorsBypassed: string[], minigameAttempts: number, totalLootCollected: number, failureReason: string? }
---- @field lootStatus table
+--- @field lootTimers table
+--- @field createdAt number
+--- @field startedAt number?
+--- @field finishedAt number?
+--- @field loot { status: table, playerTotals: table<string, number> }
+--- @field metadata { alarmTriggered: boolean, policeNotified: boolean, vaultOpenTime: number?, doorsBypassed: string[], minigameAttempts: number }
 BankHeist = {}
 BankHeist.__index = BankHeist
 
@@ -26,26 +29,30 @@ function BankHeist.new(id, config, leaderId)
 
     self.leader = leaderId
     self.timers = {}
-    self.startTime = nil
+    self.lootTimers = {}
+    self.createdAt = os.time()
+    self.startedAt = nil
+    self.finishedAt = nil
+
+    self.loot = {
+        status = {},
+        playerTotals = {}
+    }
+
     self.metadata = {
         alarmTriggered = false,
         policeNotified = false,
         vaultOpenTime = nil,
         doorsBypassed = {},
-        minigameAttempts = 0,
-        totalLootCollected = 0,
-        failureReason = nil
+        minigameAttempts = 0
     }
 
-    self.lootStatus = {}
-
     if config.vault and config.vault.loot then
-        for i, loot in ipairs(config.vault.loot) do
-            self.lootStatus[i] = {
-                collected = false,
-                usesRemaining = loot.maxUses or 1,
-                currentUser = nil,
-                amount = 0
+        for i, lootConfig in ipairs(config.vault.loot) do
+            self.loot.status[i] = {
+                maxUses = lootConfig.maxUses or 1,
+                uses = 0,
+                currentUser = nil
             }
         end
     end
@@ -95,9 +102,12 @@ function BankHeist:transitionTo(newState, reason)
 
     self.state = newState
 
-    if newState == HeistStates.FAILED and reason then
-        -- TODO: add callback or event instead of reason?
-        self.metadata.failureReason = reason
+    if newState == HeistStates.ENTRY and not self.startedAt then
+        self.startedAt = os.time()
+    end
+
+    if newState == HeistStates.COMPLETE or newState == HeistStates.FAILED then
+        self.finishedAt = os.time()
     end
 
     return true, oldState
@@ -128,7 +138,7 @@ function BankHeist:removeParticipant(playerId)
         end
     end
 
-    for _, loot in pairs(self.lootStatus) do
+    for _, loot in pairs(self.loot.status) do
         -- TODO: should we give the loot to someone else?
         if loot.currentUser == playerId then
             loot.currentUser = nil
@@ -146,9 +156,9 @@ end
 ---@param lootIndex number
 ---@param playerId string
 function BankHeist:startLootCollection(lootIndex, playerId)
-    local loot = self.lootStatus[lootIndex]
+    local loot = self.loot.status[lootIndex]
 
-    if not loot or loot.collected or loot.usesRemaining <= 0 then
+    if not loot or loot.uses >= loot.maxUses then
         return { success = false, message = "Loot not available" }
     end
 
@@ -157,15 +167,13 @@ function BankHeist:startLootCollection(lootIndex, playerId)
     end
 
     loot.currentUser = playerId
+
     local duration = self.config.vault.loot[lootIndex].channelingTimeInSeconds
 
     local timerId = Timer.SetTimeout(function()
         self:completeLootCollection(lootIndex, playerId)
     end, duration * 1000)
 
-    if not self.lootTimers then
-        self.lootTimers = {}
-    end
     self.lootTimers[lootIndex] = timerId
 
     return { success = true, duration = duration }
@@ -174,13 +182,13 @@ end
 ---@param lootIndex number
 ---@param playerId string
 function BankHeist:abortLootCollection(lootIndex, playerId)
-    local loot = self.lootStatus[lootIndex]
+    local loot = self.loot.status[lootIndex]
 
     if not loot or loot.currentUser ~= playerId then
         return { success = false }
     end
 
-    if self.lootTimers and self.lootTimers[lootIndex] then
+    if self.lootTimers[lootIndex] then
         Timer.ClearTimeout(self.lootTimers[lootIndex])
         self.lootTimers[lootIndex] = nil
     end
@@ -191,27 +199,32 @@ end
 
 ---@param lootIndex number
 ---@param playerId string
----@private
 function BankHeist:completeLootCollection(lootIndex, playerId)
-    local loot = self.lootStatus[lootIndex]
+    local loot = self.loot.status[lootIndex]
 
     if not loot or loot.currentUser ~= playerId then
         return
     end
 
     local amount = math.random(1000, 5000)
-    loot.usesRemaining = loot.usesRemaining - 1
-
-    if loot.usesRemaining <= 0 then
-        loot.collected = true
-    end
-
-    self.metadata.totalLootCollected = self.metadata.totalLootCollected + amount
+    loot.uses = loot.uses + 1
     loot.currentUser = nil
 
-    if self.lootTimers then
-        self.lootTimers[lootIndex] = nil
+    self.loot.playerTotals[playerId] = (self.loot.playerTotals[playerId] or 0) + amount
+
+    local heistTotal = 0
+    for _, total in pairs(self.loot.playerTotals) do
+        heistTotal = heistTotal + total
     end
 
-    self:broadcastEvent('lootCollected', self.metadata.totalLootCollected)
+    self.lootTimers[lootIndex] = nil
+
+    self:broadcastEvent('lootCollected', {
+        playerId = playerId,
+        amountCollected = amount,
+        total = {
+            player = self.loot.playerTotals[playerId],
+            heist = heistTotal
+        }
+    })
 end
