@@ -145,12 +145,17 @@ function BankHeist:removeParticipant(playerId)
         end
     end
 
-    if playerId == self.leader then
-        -- TODO: promote a new leader like a lobby system
+    if #self.participants == 0 then
         self:transitionTo(HeistStates.FAILED, "All participants left")
+        return
     end
 
-    -- TODO: handle if all players leave
+    if playerId == self.leader and #self.participants ~= 0 then
+        self.leader = self.participants[1]
+        return
+    end
+
+    -- TODO: dispatch user leaving event
 end
 
 ---@param lootIndex number
