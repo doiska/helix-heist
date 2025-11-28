@@ -28,3 +28,15 @@ function Timer.ClearInterval(intervalId) end
 
 ---@param intervalId string
 function Timer.ClearTimeout(intervalId) end
+
+-- TODO: update target, idk what type source is in helix
+---@param event string
+---@param source string
+---@param ... any
+function TriggerClientEvent(event, source, ...) end
+
+---@param event string
+---@param callback fun(source: any, ...): any
+function RegisterCallback(event, callback)
+
+end
