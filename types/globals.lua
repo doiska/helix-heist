@@ -22,3 +22,9 @@ Timer = {}
 ---@param callback fun()
 ---@param milliseconds number
 function Timer.SetTimeout(callback, milliseconds) end
+
+---@param intervalId string
+function Timer.ClearInterval(intervalId) end
+
+---@param intervalId string
+function Timer.ClearTimeout(intervalId) end
