@@ -53,6 +53,13 @@ function BankHeist.new(id, config, leaderId)
     return self
 end
 
+---@param event string
+function BankHeist:broadcastEvent(event, ...)
+    for _, playerId in ipairs(self.participants) do
+        TriggerClientEvent(event, tonumber(playerId), ...)
+    end
+end
+
 function BankHeist:canTransitionTo(newState)
     local validTransitions = {
         [HeistStates.IDLE] = { HeistStates.PREPARED },
@@ -134,4 +141,77 @@ function BankHeist:removeParticipant(playerId)
     end
 
     -- TODO: handle if all players leave
+end
+
+---@param lootIndex number
+---@param playerId string
+function BankHeist:startLootCollection(lootIndex, playerId)
+    local loot = self.lootStatus[lootIndex]
+
+    if not loot or loot.collected or loot.usesRemaining <= 0 then
+        return { success = false, message = "Loot not available" }
+    end
+
+    if loot.currentUser then
+        return { success = false, message = "Someone else is collecting" }
+    end
+
+    loot.currentUser = playerId
+    local duration = self.config.vault.loot[lootIndex].channelingTimeInSeconds
+
+    local timerId = Timer.SetTimeout(function()
+        self:completeLootCollection(lootIndex, playerId)
+    end, duration * 1000)
+
+    if not self.lootTimers then
+        self.lootTimers = {}
+    end
+    self.lootTimers[lootIndex] = timerId
+
+    return { success = true, duration = duration }
+end
+
+---@param lootIndex number
+---@param playerId string
+function BankHeist:abortLootCollection(lootIndex, playerId)
+    local loot = self.lootStatus[lootIndex]
+
+    if not loot or loot.currentUser ~= playerId then
+        return { success = false }
+    end
+
+    if self.lootTimers and self.lootTimers[lootIndex] then
+        Timer.ClearTimeout(self.lootTimers[lootIndex])
+        self.lootTimers[lootIndex] = nil
+    end
+
+    loot.currentUser = nil
+    return { success = true, aborted = true }
+end
+
+---@param lootIndex number
+---@param playerId string
+---@private
+function BankHeist:completeLootCollection(lootIndex, playerId)
+    local loot = self.lootStatus[lootIndex]
+
+    if not loot or loot.currentUser ~= playerId then
+        return
+    end
+
+    local amount = math.random(1000, 5000)
+    loot.usesRemaining = loot.usesRemaining - 1
+
+    if loot.usesRemaining <= 0 then
+        loot.collected = true
+    end
+
+    self.metadata.totalLootCollected = self.metadata.totalLootCollected + amount
+    loot.currentUser = nil
+
+    if self.lootTimers then
+        self.lootTimers[lootIndex] = nil
+    end
+
+    self:broadcastEvent('lootCollected', self.metadata.totalLootCollected)
 end
