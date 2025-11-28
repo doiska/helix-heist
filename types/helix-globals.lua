@@ -14,4 +14,11 @@ function JSON.stringify(table)
 end
 
 --@class HELIXTable
---@param
+HELIXTable = HELIXTable
+
+--- Reduces a table to a single value using a reducer function.
+---@param table table
+---@param reducer function
+---@param initial any
+---@return any
+function HELIXTable.reduce(table, reducer, initial) end

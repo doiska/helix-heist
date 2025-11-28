@@ -97,7 +97,7 @@ function BankHeist:transitionTo(newState, reason)
     local oldState = self.state
 
     if not self:canTransitionTo(newState) then
-        return false, nil
+        return false
     end
 
     self.state = newState
@@ -110,7 +110,9 @@ function BankHeist:transitionTo(newState, reason)
         self.finishedAt = os.time()
     end
 
-    return true, oldState
+    print(string.format('transitionTo: %s -> (%s, %s)', oldState, newState, reason))
+
+    return true
 end
 
 function BankHeist:addParticipant(playerId)
@@ -217,10 +219,9 @@ function BankHeist:completeLootCollection(lootIndex, playerId)
 
     self.loot.playerTotals[playerId] = (self.loot.playerTotals[playerId] or 0) + amount
 
-    local heistTotal = 0
-    for _, total in pairs(self.loot.playerTotals) do
-        heistTotal = heistTotal + total
-    end
+    local heistTotal = HELIXTable.reduce(self.loot.playerTotals, function(acc, val)
+        return acc + val
+    end, 0)
 
     self.lootTimers[lootIndex] = nil
 
