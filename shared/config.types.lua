@@ -42,7 +42,7 @@
 ---@field distanceFromTheBank number
 
 ---@class BankEscapePoliceConfig
----@field durationInSeconds numbe
+---@field durationInSeconds number
 
 ---@class BankEscapeConfig
 ---@field condition string              -- "radius" | "police"

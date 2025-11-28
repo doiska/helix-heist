@@ -12,21 +12,19 @@ Config.Persistence = {
     }
 }
 
-
-
 ---@type BankCfg
 Config.Banks = {
     central = {
         label = "Central Bank",
         start = {
-            minPlayers = 4,        -- Ignored in debug mode
-            minPoliceOfficers = 2, -- Ignored in debug mode
+            minPlayers = 4,        -- ignored in debug mode
+            minPoliceOfficers = 2, -- ignored in debug mode
         },
         security = {
             doors = {
                 {
                     entity = "/Game/HelixDoors/Blueprints/BP_Door_Rotating.BP_Door_Rotating_C",
-                    lockType = nil, -- Laptop to solve the game
+                    lockType = nil, -- laptop to solve the game
                     location = Vector(1119.21, -688.387, 100.0),
                     rotation = Rotator(0, 0, 0)
                 },
@@ -38,10 +36,10 @@ Config.Banks = {
         },
         vault = {
             location = Vector(1119.21, -688.387, 100.0),
-            openDuration = 3 * 60, -- Duration that the vault will stay open
+            openDuration = 3 * 60, -- duration that the vault will stay open
             policeAutoArriveInSeconds = 3 * 60,
             minigame = {
-                type = "pattern",
+                type = "pattern", -- only pattern for now
                 pattern = {
                     sequenceLength = 5,
                     timeLimitInSeconds = 30,
@@ -53,13 +51,20 @@ Config.Banks = {
                     entity = "/Game/QBCore/Meshes/SM_ATM.SM_ATM",
                     location = Vector(1119.21, -688.387, 100.0),
                     maxUses = 1,
-                    channelingTimeInSeconds = 30
+                    channelingTimeInSeconds = 30,
+                    items = {
+                        { id = "cash", amount = math.random(1000, 5000) },
+                    }
                 },
                 {
                     entity = "",
                     location = Vector(1119.21, -688.387, 100.0),
                     maxUses = 1,
-                    channelingTimeInSeconds = 5
+                    channelingTimeInSeconds = 5,
+                    items = {
+                        { id = "cash",        amount = 5000 },
+                        { id = "bank_titles", amount = 2 } -- i havent robbed a bank, yet. so im not sure what items to give
+                    }
                 }
             }
         },
