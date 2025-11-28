@@ -22,7 +22,7 @@ HeistStates = {
 --- @field createdAt number
 --- @field startedAt number?
 --- @field finishedAt number?
---- @field loot { status: table, playerTotals: table<string, number> }
+--- @field loot { status: { uses: number, maxUses: number, amount: number, currentUser: string? }, playerTotals: table<string, number> }
 --- @field minigame { sequence: number[], attempts: { playerId: string, guess: number[], result: { correct: number, present: number } }[] }?
 --- @field metadata { alarmTriggered: boolean, policeNotified: boolean, vaultOpenTime: number?, doorsBypassed: string[], minigameAttempts: number }
 BankHeist = {}
@@ -66,6 +66,7 @@ function BankHeist.new(id, config, leaderId)
             self.loot.status[i] = {
                 maxUses = lootConfig.maxUses or 1,
                 uses = 0,
+                amount = math.random(2000, 6000),
                 currentUser = nil
             }
         end
@@ -289,30 +290,24 @@ end
 function BankHeist:completeLootCollection(lootIndex, playerId)
     local loot = self.loot.status[lootIndex]
 
-    if not loot or loot.currentUser ~= playerId then
-        return
+    if not loot then
+        return false, "Loot no longer exists"
     end
 
+    if loot.currentUser ~= playerId then
+        return false, "Loot is being collected by another player"
+    end
+
+    -- todo: make it configurable
     local amount = math.random(1000, 5000)
+
     loot.uses = loot.uses + 1
     loot.currentUser = nil
 
     self.loot.playerTotals[playerId] = (self.loot.playerTotals[playerId] or 0) + amount
-
-    local heistTotal = HELIXTable.reduce(self.loot.playerTotals, function(acc, val)
-        return acc + val
-    end, 0)
-
     self.lootTimers[lootIndex] = nil
 
-    self:broadcastEvent('lootCollected', {
-        playerId = playerId,
-        amountCollected = amount,
-        total = {
-            player = self.loot.playerTotals[playerId],
-            heist = heistTotal
-        }
-    })
+    return true
 end
 
 function BankHeist:startTimer(name, duration, callback)
