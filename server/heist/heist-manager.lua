@@ -1,11 +1,13 @@
 ---@class HeistManager
 ---@field activeHeists table<string, BankHeist>
 ---@field playerHeists table<string, string>
+---@field playersInCooldown table<string, number>
 HeistManager = {
     -- TODO: not completely sure if we should aim for a single source of truth (only a single heist array) or
     -- 1 array for heists and 1 array for players in heists and focusing in O(1) for our lookup functions (isPlayerInHeist for exmaple)
     activeHeists = {},
-    playerHeists = {}
+    playerHeists = {},
+    playersInCooldown = {}
 }
 
 ---@param heistId string
@@ -112,25 +114,7 @@ function HeistManager:leaveHeist(playerId, reason)
     heist:removeParticipant(playerId)
     self.playerHeists[playerId] = nil
 
-    TriggerClientEvent('HeistUpdate', playerId, {
-        heistId = heistId,
-        deleted = true
-    })
-
-    if #heist.participants > 0 then
-        heist:broadcastEvent('HeistUpdate', {
-            heistId = heistId,
-            state = heist.state,
-            participants = heist.participants,
-            leader = heist.leader,
-            canJoin = heist.state == HeistStates.IDLE or heist.state == HeistStates.PREPARED
-        })
-    else
-        heist:broadcastEvent('HeistUpdate', {
-            heistId = heistId,
-            deleted = true
-        })
-    end
+    heist:broadcastState()
 
     if heist.state == HeistStates.FAILED or #heist.participants == 0 then
         self:removeHeist(heistId)
@@ -139,8 +123,39 @@ function HeistManager:leaveHeist(playerId, reason)
     return true, nil
 end
 
-function HeistManager:getPlayerHeistById(playerId)
-    return self.playerHeists[playerId]
+function HeistManager:startHeist(playerId)
+    local heist = self:getPlayerHeist(playerId)
+
+    if not heist then
+        return false, "No heist found"
+    end
+
+    local isLeader = heist.leader == playerId
+
+    if not isLeader then
+        return false, "Only the leader can start the heist"
+    end
+
+    -- loop through all participants and check if they have necessary items
+    for index, value in ipairs(heist.participants) do
+        for _, requiredItem in ipairs(heist.config.start.requiredItems) do
+            local mockInventoryCount = math.random(1, 10)
+            local hasItem = mockInventoryCount >= requiredItem.amount
+
+            if not hasItem then
+                return false, "Not all participants have necessary items"
+            end
+        end
+    end
+
+    if not heist:canTransitionTo(HeistStates.ENTRY) then
+        return false, "The Heist is not at preparing state"
+    end
+
+    heist:transitionTo(HeistStates.ENTRY)
+
+    --todo: teleport players to the heist entrace or mark on their map
+    heist:broadcastState()
 end
 
 -- TODO: add the option to the leader to delete the heist?
@@ -163,6 +178,10 @@ function HeistManager:removeHeist(heistId)
     -- TODO: change the event to something else, we shouldn't need a event only for deletion, might be better to handle like a game state change (aka failed)
     heist:broadcastEvent("HeistDeleted")
     self.activeHeists[heistId] = nil
+end
+
+function HeistManager:getPlayerHeistById(playerId)
+    return self.playerHeists[playerId]
 end
 
 ---@param playerId string
@@ -192,7 +211,6 @@ function HeistManager:getActiveHeistsInfo()
 end
 
 -- TODO: im not sure if i should leave it here or move to heist-events (some kind of handler for player interactions) or something like that, cleanup later
-
 RegisterCallback("CreateHeist", function(player)
     local source = player:GetName()
 
@@ -241,7 +259,6 @@ RegisterCallback("GetActiveHeistInfo", function()
         data = HeistManager:getActiveHeistsInfo()
     }
 end)
-
 
 RegisterCallback("GetUserHeistState", function(player)
     local source = player:GetName()

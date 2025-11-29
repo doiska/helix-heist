@@ -19,6 +19,10 @@ Config.Banks = {
         start = {
             minPlayers = 4,        -- ignored in debug mode
             minPoliceOfficers = 2, -- ignored in debug mode
+            requiredItems = {
+                { id = "lockpick", amount = 5 },
+                { id = "laptop",   amount = 1 }
+            }
         },
         security = {
             doors = {
