@@ -7,8 +7,8 @@ interface HeistLobbyProps {
   onBack?: () => void;
 }
 
-export default function HeistLobby({ onBack }: HeistLobbyProps) {
-  const { data: userHeistState } = useClientQuery<UserHeistState>({
+export function HeistLobby({ onBack }: HeistLobbyProps) {
+  const { data: userHeistState, refetch } = useClientQuery<UserHeistState>({
     event: "GetUserHeistState",
     queryKey: ["heist", "user"],
   });
@@ -31,7 +31,11 @@ export default function HeistLobby({ onBack }: HeistLobbyProps) {
         </div>
 
         <div className="flex-1 overflow-y-auto px-8 py-6">
-          {userHeistState?.inHeist ? <LobbyRoom /> : <LobbyList />}
+          {userHeistState?.inHeist ? (
+            <LobbyRoom onStateUpdate={() => refetch()} />
+          ) : (
+            <LobbyList onStateUpdate={() => refetch()} />
+          )}
         </div>
       </div>
     </div>

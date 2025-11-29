@@ -8,7 +8,7 @@ import {
   type UserHeistState,
 } from "../types/heist";
 
-export function LobbyRoom() {
+export function LobbyRoom({ onStateUpdate }: { onStateUpdate: () => void }) {
   const queryCache = useQueryCache();
 
   const { data: userHeistState, refetch } = useClientQuery<UserHeistState>({
@@ -55,7 +55,7 @@ export function LobbyRoom() {
 
   const handleLeaveHeist = async () => {
     await leaveHeistMutation("LeaveHeist", undefined);
-    refetch();
+    onStateUpdate();
   };
 
   if (!currentHeist) {

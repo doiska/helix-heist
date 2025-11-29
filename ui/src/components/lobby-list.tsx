@@ -1,16 +1,8 @@
 import { useUIMutation } from "../hooks/utils/use-client-mutation";
 import { useClientQuery } from "../hooks/utils/use-client-query";
-import {
-  type HeistLobby as HeistLobbyType,
-  type UserHeistState,
-} from "../types/heist";
+import { type HeistLobby as HeistLobbyType } from "../types/heist";
 
-export function LobbyList() {
-  const { refetch } = useClientQuery<UserHeistState>({
-    event: "GetUserHeistState",
-    queryKey: ["heist", "user"],
-  });
-
+export function LobbyList({ onStateUpdate }: { onStateUpdate: () => void }) {
   const { mutate, status } = useUIMutation();
 
   const { data: heistLobbies = [] } = useClientQuery<HeistLobbyType[]>({
@@ -20,12 +12,12 @@ export function LobbyList() {
 
   const handleCreateHeist = async () => {
     await mutate("CreateHeist");
-    refetch();
+    onStateUpdate();
   };
 
   const handleJoinHeist = async (heistId: string) => {
     await mutate("JoinHeist", heistId);
-    refetch();
+    onStateUpdate();
   };
 
   return (
