@@ -8,7 +8,7 @@ type CallbackResponse<Data = never> =
       message: string;
     };
 
-export function processCallbackResponse<Output = never>(
+export function parseCallbackResponse<Output = never>(
   messageEvent: MessageEvent,
 ) {
   const response = messageEvent.data as { name: string; args?: string };
