@@ -8,10 +8,10 @@ import {
   type UserHeistState,
 } from "../types/heist";
 
-export default function LobbyRoom() {
+export function LobbyRoom() {
   const queryCache = useQueryCache();
 
-  const { data: userHeistState } = useClientQuery<UserHeistState>({
+  const { data: userHeistState, refetch } = useClientQuery<UserHeistState>({
     event: "GetUserHeistState",
     queryKey: ["heist", "user"],
   });
@@ -55,6 +55,7 @@ export default function LobbyRoom() {
 
   const handleLeaveHeist = async () => {
     await leaveHeistMutation("LeaveHeist", undefined);
+    refetch();
   };
 
   if (!currentHeist) {

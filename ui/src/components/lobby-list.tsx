@@ -1,34 +1,45 @@
-import { useClientQuery } from "../hooks/utils/use-client-query";
 import { useUIMutation } from "../hooks/utils/use-client-mutation";
-import { type HeistLobby as HeistLobbyType } from "../types/heist";
+import { useClientQuery } from "../hooks/utils/use-client-query";
+import {
+  type HeistLobby as HeistLobbyType,
+  type UserHeistState,
+} from "../types/heist";
 
-export default function LobbyList() {
+export function LobbyList() {
+  const { refetch } = useClientQuery<UserHeistState>({
+    event: "GetUserHeistState",
+    queryKey: ["heist", "user"],
+  });
+
+  const { mutate, status } = useUIMutation();
+
   const { data: heistLobbies = [] } = useClientQuery<HeistLobbyType[]>({
     event: "GetActiveHeistInfo",
     queryKey: ["heist", "lobbies"],
   });
 
-  const { mutate } = useUIMutation();
+  const handleCreateHeist = async () => {
+    await mutate("CreateHeist");
+    refetch();
+  };
 
   const handleJoinHeist = async (heistId: string) => {
     await mutate("JoinHeist", heistId);
-  };
-
-  const createHeist = async () => {
-    await mutate("CreateHeist");
+    refetch();
   };
 
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
         <div className="text-zinc-300 text-xs uppercase tracking-wide font-bold">
-          Available Operations ({heistLobbies.length})awdawd
+          Available Operations ({heistLobbies.length})
         </div>
         <button
-          className="py-4 px-2 bg-emerald-500 text-white h-11 shadow-sm"
-          onClick={createHeist}
+          disabled={status === "loading"}
+          onClick={handleCreateHeist}
+          className="inline-flex items-center justify-center text-white bg-emerald-600 shadow rounded"
         >
-          Create Heist
+          Start a new Heist
         </button>
       </div>
 
@@ -73,8 +84,8 @@ export default function LobbyList() {
 
                 <div className="flex items-center gap-2">
                   <button
+                    disabled={status === "loading" || !heist.canJoin}
                     onClick={() => handleJoinHeist(heist.id)}
-                    disabled={!heist.canJoin}
                     className="bg-blue-600/80 hover:bg-blue-600 disabled:bg-zinc-800 disabled:text-zinc-600 text-white px-4 py-2 rounded font-bold text-xs transition-all border border-blue-500/30 hover:border-blue-500 disabled:border-zinc-700"
                   >
                     JOIN
