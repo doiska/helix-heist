@@ -82,6 +82,16 @@ function BankHeist:broadcastEvent(event, ...)
     end
 end
 
+function BankHeist:broadcastState()
+    self:broadcastEvent('HeistUpdate', {
+        heistId = self.id,
+        state = self.state,
+        participants = self.participants,
+        leader = self.leader,
+        canJoin = self.state == HeistStates.IDLE or self.state == HeistStates.PREPARED
+    })
+end
+
 function BankHeist:canTransitionTo(newState)
     local validTransitions = {
         [HeistStates.IDLE] = { HeistStates.PREPARED },
