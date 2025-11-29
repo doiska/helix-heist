@@ -20,9 +20,7 @@ end)
 -- it works like RegisterCallback but as if you registered on server
 -- few flaws: no ratelimit, weak error handling
 function UiServerCallbackProxy(event)
-    print("UiServerCallbackProxy")
     UI.Browser.OnLoadCompleted:Add(UI.Browser, function()
-        print("completed")
         UI:RegisterEventHandler(event, function(...)
             TriggerCallback(event, function(result)
                 local callbackName = event .. "_callback"
@@ -49,7 +47,7 @@ function UiServerCallbackProxy(event)
             end, ...)
         end)
 
-        UI:SendEvent('Loaded', {})
+        UI:SendEvent('Loaded')
     end)
 end
 
