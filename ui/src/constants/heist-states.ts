@@ -1,0 +1,11 @@
+export const HeistState = {
+  IDLE: "IDLE",
+  PREPARED: "PREPARED",
+  ENTRY: "ENTRY",
+  VAULT_LOCKED: "VAULT_LOCKED",
+  VAULT_OPEN: "VAULT_OPEN",
+  LOOTING: "LOOTING",
+  ESCAPE: "ESCAPE",
+  COMPLETE: "COMPLETE",
+  FAILED: "FAILED",
+} as const;
