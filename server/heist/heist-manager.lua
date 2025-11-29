@@ -93,10 +93,6 @@ function HeistManager:joinHeist(playerId, heistId)
     return true, nil
 end
 
-RegisterCallback('JoinHeist', function(source, heistId)
-    return HeistManager:joinHeist(source, heistId)
-end)
-
 ---@param playerId string
 ---@param reason string?
 ---@return boolean, string?
@@ -194,10 +190,12 @@ end
 
 -- TODO: im not sure if i should leave it here or move to heist-events (some kind of handler for player interactions) or something like that, cleanup later
 
-RegisterCallback("CreateHeist", function(source, ...)
-    print("Received CreateHeist server-side")
+RegisterCallback("CreateHeist", function(player)
+    local source = player:GetName()
+
+    print("Received CreateHeist server-side: " .. source)
     -- hardcoded bank cfg for now (need to add to the ui)
-    local heist, errorMessage = HeistManager:createHeist(source, Config.Banks.central, source)
+    local heist, errorMessage = HeistManager:createHeist("heist_" .. source, Config.Banks.central, source)
 
     if heist == nil then
         return {
@@ -212,7 +210,13 @@ RegisterCallback("CreateHeist", function(source, ...)
     }
 end)
 
-RegisterCallback('LeaveHeist', function(source, reason)
+RegisterCallback('JoinHeist', function(player, heistId)
+    local source = player:GetName()
+    return HeistManager:joinHeist(source, heistId)
+end)
+
+RegisterCallback('LeaveHeist', function(player, reason)
+    local source = player:GetName()
     local success, errorMessage = HeistManager:leaveHeist(source, reason)
 
     if not success then
@@ -235,9 +239,9 @@ RegisterCallback("GetActiveHeistInfo", function()
     }
 end)
 
-RegisterCallback("GetUserHeistState", function(source)
-    local playerId = tostring(source)
-    local heistId = HeistManager.playerHeists[playerId]
+RegisterCallback("GetUserHeistState", function(player)
+    local source = player:GetName()
+    local heistId = HeistManager.playerHeists[source]
 
     return {
         status = "success",
