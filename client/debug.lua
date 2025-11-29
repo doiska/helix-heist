@@ -10,7 +10,7 @@ end)
 DebugCommand("heist:create", function(args)
     TriggerCallback("CreateHeist", function(result)
         if result.status == "success" then
-            print("Joined heist!")
+            print("Created and joined heist!")
         elseif result.status == "error" then
             print(result.message)
         end
@@ -21,6 +21,16 @@ DebugCommand("heist:start", function()
     TriggerCallback("StartHeist", function(result)
         if result.status == "success" then
             print("Started heist!")
+        elseif result.status == "error" then
+            print(result.message)
+        end
+    end)
+end)
+
+DebugCommand("heist:leave", function()
+    TriggerCallback("LeaveHeist", function(result)
+        if result.status == "success" then
+            print("Left heist")
         elseif result.status == "error" then
             print(result.message)
         end

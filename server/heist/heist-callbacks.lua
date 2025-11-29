@@ -50,7 +50,7 @@ RegisterCallback('LeaveHeist', function(player, reason)
     end
 
     return {
-        status = success,
+        status = "success",
         data = {}
     }
 end)
