@@ -1,3 +1,6 @@
+-- some considerations:
+-- I know the return logic is redundant, I'm still thinking in a better approach, but this makes the response consistent and easy to handle
+
 RegisterCallback("CreateHeist", function(player)
     local source = player:GetName()
 
@@ -20,7 +23,19 @@ end)
 
 RegisterCallback('JoinHeist', function(player, heistId)
     local source = player:GetName()
-    return HeistManager:joinHeist(source, heistId)
+    local success, errorMessage = HeistManager:joinHeist(source, heistId)
+
+    if not success then
+        return {
+            status = "success",
+            data = {}
+        }
+    end
+
+    return {
+        status = success,
+        message = errorMessage
+    }
 end)
 
 RegisterCallback('LeaveHeist', function(player, reason)
@@ -38,6 +53,22 @@ RegisterCallback('LeaveHeist', function(player, reason)
         status = success,
         data = {}
     }
+end)
+
+RegisterCallback("StartHeist", function(player, ...)
+    local success, message = HeistManager:startHeist(player:GetName())
+
+    if success then
+        return {
+            status = "success",
+            data = {}
+        }
+    else
+        return {
+            status = "error",
+            message = message
+        }
+    end
 end)
 
 RegisterCallback("GetActiveHeistInfo", function()
