@@ -7,6 +7,7 @@ local Console = GetActorByTag('HConsole')
 --     HWorld,
 --     function()
 --         print("Heist UI called")
+--         UI = WebUI("heist-ui", "main/ui/dist/index.html", 1)
 --         -- I wanted to create it on-demand but doesn't seem possible yet, or at least doesn't seem to be working.
 --         UI.Browser.OnLoadCompleted:Add(UI.Browser, function()
 
@@ -15,6 +16,9 @@ local Console = GetActorByTag('HConsole')
 -- })
 --
 
+-- this function will relay events that come from the UI (registered) directly to the server, without having to re-emit through the client
+-- it works like RegisterCallback but as if you registered on server
+-- few flaws: no ratelimit, weak error handling
 function UiServerCallbackProxy(event)
     UI:RegisterEventHandler(event, function(...)
         print("Received " .. event)
