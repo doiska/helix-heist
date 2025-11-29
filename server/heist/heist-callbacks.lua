@@ -100,11 +100,5 @@ RegisterCallback("SubmitMinigameAttempt", function(player, minigameId, attempt)
         return { status = "error", message = "Not in a heist" }
     end
 
-    local result = HeistMinigame.validate(heist, playerId, minigameId, attempt)
-
-    if result.success or not result.complete then
-        return { status = "success", data = result }
-    else
-        return { status = "error", message = result.message, data = result }
-    end
+    return HeistMinigame.validate(heist, playerId, minigameId, attempt)
 end)

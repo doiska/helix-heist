@@ -261,11 +261,11 @@ function BankHeist:startLootCollection(lootIndex, playerId)
     local loot = self.loot.status[lootIndex]
 
     if not loot or loot.uses >= loot.maxUses then
-        return { success = false, message = "Loot not available" }
+        return { status = "error", message = "Loot not available" }
     end
 
     if loot.currentUser then
-        return { success = false, message = "Someone else is collecting" }
+        return { status = "error", message = "Someone else is collecting" }
     end
 
     loot.currentUser = playerId
@@ -278,7 +278,7 @@ function BankHeist:startLootCollection(lootIndex, playerId)
 
     self.lootTimers[lootIndex] = timerId
 
-    return { success = true, duration = duration }
+    return { status = "success", duration = duration }
 end
 
 ---@param lootIndex number
@@ -287,7 +287,7 @@ function BankHeist:abortLootCollection(lootIndex, playerId)
     local loot = self.loot.status[lootIndex]
 
     if not loot or loot.currentUser ~= playerId then
-        return { success = false }
+        return { status = "error", message = "Loot not available" }
     end
 
     if self.lootTimers[lootIndex] then
@@ -296,7 +296,7 @@ function BankHeist:abortLootCollection(lootIndex, playerId)
     end
 
     loot.currentUser = nil
-    return { success = true, aborted = true }
+    return { status = "success", message = "Loot collection aborted" }
 end
 
 ---@param lootIndex number

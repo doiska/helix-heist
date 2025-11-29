@@ -95,7 +95,7 @@ function HeistMinigame.validate(heist, playerId, minigameId, attempt)
     progress.attemptsCount = progress.attemptsCount + 1
     table.insert(progress.attempts, { attempt = attempt, result = result })
 
-    if result.success then
+    if result.status == "success" then
         minigame.solved = true
         minigame.solvedBy = playerId
         progress.completed = true
@@ -110,6 +110,7 @@ function HeistMinigame.validate(heist, playerId, minigameId, attempt)
                 solved = true,
                 complete = true,
                 result = result,
+                message = "Solved!",
                 attemptsRemaining = 0
             }
         }
@@ -138,6 +139,7 @@ function HeistMinigame.validate(heist, playerId, minigameId, attempt)
             solved = false,
             complete = false,
             result = result,
+            message = "Incorrect",
             attemptsRemaining = attemptsRemaining
         }
     }
