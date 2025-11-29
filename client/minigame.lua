@@ -3,10 +3,12 @@ local Console = GetActorByTag('HConsole')
 
 Console:RegisterCommand("startminigame", "Start a minigame", nil, {
     HWorld,
-    function(minigameId)
+    function(_, _, args)
+        local minigameId = args[1]
+
         if not minigameId then
-            print("Usage: /startminigame <id>")
-            print("IDs: vault_door, door_1, door_2")
+            print("/startminigame <id>")
+            print("vault_door, door_1, door_2")
             return
         end
 
@@ -29,13 +31,15 @@ Console:RegisterCommand("startminigame", "Start a minigame", nil, {
 
 Console:RegisterCommand("submitminigame", "Submit minigame attempt", nil, {
     HWorld,
-    function(minigameId, ...)
+    function(_, _, commandArgs)
+        local minigameId = commandArgs[1]
+
         if not minigameId then
             print("submitminigame <id> <attempt>")
             return
         end
 
-        local args = { ... }
+        local args = table.unpack(commandArgs)
         local attempt = nil
 
         if not activeMinigame then
