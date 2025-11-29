@@ -1,17 +1,6 @@
 import { useState, useEffect } from "preact/hooks";
-
-type CallbackResponse<Data = never> =
-  | {
-      status: "success";
-      data: Data;
-    }
-  | {
-      status: "error";
-      message: string;
-    };
-
-// tried to make a low-cost version of useQuery from @tanstack/react-query so we can fetch and cache the data using queryKey
-// TODO: add refetchInterval or refresh on mount
+import { queryCache } from "./query-cache";
+import { processCallbackResponse } from "../../lib/event-response";
 
 export function useClientQuery<Output = unknown>({
   queryKey,
@@ -29,7 +18,7 @@ export function useClientQuery<Output = unknown>({
   >("idle");
 
   const [error, setError] = useState<string | undefined>(undefined);
-  const [data, setData] = useState<Output | undefined>(undefined);
+  const [_, setCacheVersion] = useState(0);
 
   const fetchData = () => {
     if (!enabled) return;
@@ -45,6 +34,23 @@ export function useClientQuery<Output = unknown>({
     }, 5000);
 
     const handleMessage = (messageEvent: MessageEvent) => {
+      const response = processCallbackResponse(messageEvent);
+
+      console.log(JSON.stringify(response));
+
+      if (!response.data) {
+        console.error(`Missing callback response for ${event}`);
+        return;
+      }
+
+      if (response.name !== `${event}_callback`) {
+        return;
+      }
+
+      console.log(`Received ${event} callback.`);
+
+      //TODO: validate if the event we received is the same as were expecting
+
       if (abortController.signal.aborted) {
         console.error(
           `Tried to respond to ${event} after it was aborted due to timeout`,
@@ -52,10 +58,11 @@ export function useClientQuery<Output = unknown>({
         return;
       }
 
-      const result = messageEvent.data as CallbackResponse<Output>;
+      //todo: safe parse it
+      const result = response.data;
 
       if (result.status === "success") {
-        setData(result.data);
+        queryCache.setQueryData(queryKey, result.data);
         setError(undefined);
         setStatus("success");
       } else if (result.status === "error") {
@@ -91,11 +98,21 @@ export function useClientQuery<Output = unknown>({
     return fetchData();
   }, [event, JSON.stringify(payload), JSON.stringify(queryKey), enabled]);
 
+  useEffect(() => {
+    const unsubscribe = queryCache.subscribe(queryKey, () => {
+      setCacheVersion((v) => v + 1);
+    });
+
+    return unsubscribe;
+  }, [JSON.stringify(queryKey)]);
+
   const refetch = () => {
     if (enabled) {
       fetchData();
     }
   };
+
+  const data = queryCache.getQueryData<Output>(queryKey);
 
   return {
     data,

@@ -1,4 +1,5 @@
 import { useState } from "preact/hooks";
+import { processCallbackResponse } from "../../lib/event-response";
 
 type CallbackResponse<Data = never> =
   | {
@@ -36,6 +37,21 @@ export function useUIMutation<Output = unknown>() {
     }, 5000);
 
     const handleMessage = (messageEvent: MessageEvent) => {
+      const response = processCallbackResponse(messageEvent);
+
+      console.log(JSON.stringify(response));
+
+      if (!response.data) {
+        console.error(`No callback response by ${event}`);
+        return;
+      }
+
+      if (response.name !== `${event}_callback`) {
+        return;
+      }
+
+      console.log(`Received ${event} callback.`);
+
       if (abortController.signal.aborted) {
         console.error(
           `Tried to respond to ${event} after it was aborted due to timeout`,
@@ -43,7 +59,8 @@ export function useUIMutation<Output = unknown>() {
         return;
       }
 
-      const result = messageEvent.data as CallbackResponse<Output>;
+      //todo: safe parse it
+      const result = response.data;
 
       if (result.status === "success") {
         setData(result.data);
