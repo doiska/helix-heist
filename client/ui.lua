@@ -9,9 +9,9 @@ local Console = GetActorByTag('HConsole')
 --         print("Heist UI called")
 --         UI = WebUI("heist-ui", "main/ui/dist/index.html", 1)
 --         -- I wanted to create it on-demand but doesn't seem possible yet, or at least doesn't seem to be working.
---         UI.Browser.OnLoadCompleted:Add(UI.Browser, function()
+UI.Browser.OnLoadCompleted:Add(UI.Browser, function()
 
---         end)
+end)
 --     end
 -- })
 --
@@ -20,32 +20,36 @@ local Console = GetActorByTag('HConsole')
 -- it works like RegisterCallback but as if you registered on server
 -- few flaws: no ratelimit, weak error handling
 function UiServerCallbackProxy(event)
-    UI:RegisterEventHandler(event, function(...)
-        print("Received " .. event)
+    print("UiServerCallbackProxy")
+    UI.Browser.OnLoadCompleted:Add(UI.Browser, function()
+        print("completed")
+        UI:RegisterEventHandler(event, function(...)
+            TriggerCallback(event, function(result)
+                local callbackName = event .. "_callback"
 
-        TriggerCallback(event, function(result)
-            local callbackName = event .. "_callback"
+                if result == nil or result.status == nil then
+                    UI:SendEvent(callbackName, {
+                        status = "error",
+                        message = "No response"
+                    })
+                    return
+                end
 
-            if result == nil or result.status == nil then
-                UI:SendEvent(callbackName, {
-                    status = "error",
-                    message = "No response"
-                })
-                return
-            end
+                if result.status == "success" then
+                    UI:SendEvent(callbackName, {
+                        status = "success",
+                        data = result.data or nil
+                    })
+                elseif result.status == "error" then
+                    UI:SendEvent(callbackName, {
+                        status = "error",
+                        message = result.message
+                    })
+                end
+            end, ...)
+        end)
 
-            if result.status == "success" then
-                UI:SendEvent(callbackName, {
-                    status = "success",
-                    data = result.data or nil
-                })
-            elseif result.status == "error" then
-                UI:SendEvent(callbackName, {
-                    status = "error",
-                    message = result.message
-                })
-            end
-        end, ...)
+        UI:SendEvent('Loaded', {})
     end)
 end
 
