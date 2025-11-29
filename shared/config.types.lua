@@ -26,6 +26,20 @@
 ---@field type string -- "pattern", "lockpick", "drill" -- lua lacks unions :()
 ---@field pattern BankMinigamePatternConfig|nil
 
+---@class Minigame
+---@field id string
+---@field type string                    -- "vault" | "door"
+---@field minigameType string            -- "pattern" | "lockpick"
+---@field answer any
+---@field solved boolean
+---@field solvedBy string?
+---@field maxAttempts number
+
+---@class PlayerMinigameProgress
+---@field attempts any[]
+---@field attemptsCount number
+---@field completed boolean
+
 ---@class BankLootEntry
 ---@field entity string
 ---@field location Vector
