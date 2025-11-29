@@ -1,55 +1,162 @@
 HeistMinigame = {}
 
----@param heist BankHeist
-function HeistMinigame.generate(heist)
-    local config = heist.config.vault.minigame
+function HeistMinigame.initializeMinigames(heist)
+    local config = heist.config
 
-    if config.type ~= "pattern" then
-        return
+    if config.vault and config.vault.minigame then
+        HeistMinigame.createMinigame(heist, "vault_door", "vault", config.vault.minigame)
     end
 
-    local sequence = {}
-    for _ = 1, 4 do
-        table.insert(sequence, math.random(0, 9))
+    if config.security and config.security.doors then
+        for i, door in ipairs(config.security.doors) do
+            local doorId = "door_" .. i
+            local minigameConfig = {
+                type = "lockpick",
+                lockpick = { maxAttempts = 3 }
+            }
+
+            HeistMinigame.createMinigame(heist, doorId, "door", minigameConfig)
+        end
     end
-
-    heist.minigame = {
-        sequence = sequence,
-        attempts = {}
-    }
-
-    print(string.format("minigame: [%d, %d, %d, %d]", heist.id, sequence[1], sequence[2], sequence[3], sequence[4]))
 end
 
----@param heist BankHeist
----@param playerId string
----@param guess [number, number, number, number]
----@return { success: boolean, correct: number?, present: number?, message: string? }
-function HeistMinigame.validate(heist, playerId, guess)
-    if heist.state ~= HeistStates.VAULT_LOCKED then
-        return { success = false, message = "Vault not in correct state" }
+function HeistMinigame.createMinigame(heist, id, obstacleType, config)
+    local minigameType = config.type
+    local answer = nil
+    local maxAttempts = 5
+
+    if minigameType == "pattern" then
+        answer = {}
+        for _ = 1, 4 do
+            table.insert(answer, math.random(0, 9))
+        end
+        maxAttempts = config.pattern and config.pattern.maxAttempts or 5
+    elseif minigameType == "lockpick" then
+        answer = math.random(0, 360)
+        maxAttempts = config.lockpick and config.lockpick.maxAttempts or 3
     end
 
-    if not heist.minigame then
-        return { success = false, message = "Minigame not initialized" }
+    heist.minigames[id] = {
+        id = id,
+        type = obstacleType,
+        minigameType = minigameType,
+        answer = answer,
+        solved = false,
+        solvedBy = nil,
+        maxAttempts = maxAttempts
+    }
+
+    print(string.format("[Heist:%s] Minigame %s created (type:%s)", heist.id, id, minigameType))
+end
+
+function HeistMinigame.validate(heist, playerId, minigameId, attempt)
+    local minigame = heist.minigames[minigameId]
+
+    if not minigame then
+        return { status = "error", message = "Minigame not found" }
     end
 
+    if minigame.solved then
+        return { status = "error", message = "Already solved by " .. minigame.solvedBy }
+    end
+
+    if not heist.playerProgress[playerId] then
+        heist.playerProgress[playerId] = {}
+    end
+
+    if not heist.playerProgress[playerId][minigameId] then
+        heist.playerProgress[playerId][minigameId] = {
+            attempts = {},
+            attemptsCount = 0,
+            completed = false
+        }
+    end
+
+    local progress = heist.playerProgress[playerId][minigameId]
+
+    if progress.completed then
+        return { status = "error", message = "You already completed this" }
+    end
+
+    local result = nil
+
+    if minigame.minigameType == "pattern" then
+        result = HeistMinigame.validatePattern(minigame.answer, attempt)
+    elseif minigame.minigameType == "lockpick" then
+        result = HeistMinigame.validateLockpick(minigame.answer, attempt)
+    else
+        print("Invalid minigame: " .. minigame)
+        return {
+            status = "error",
+            message = "Invalid minigame"
+        }
+    end
+
+    progress.attemptsCount = progress.attemptsCount + 1
+    table.insert(progress.attempts, { attempt = attempt, result = result })
+
+    if result.success then
+        minigame.solved = true
+        minigame.solvedBy = playerId
+        progress.completed = true
+
+        if minigame.type == "vault" then
+            heist:transitionTo(HeistStates.VAULT_OPEN)
+        end
+
+        return {
+            status = "success",
+            data = {
+                solved = true,
+                complete = true,
+                result = result,
+                attemptsRemaining = 0
+            }
+        }
+    end
+
+    local attemptsRemaining = minigame.maxAttempts - progress.attemptsCount
+
+    if attemptsRemaining <= 0 then
+        progress.completed = true
+
+        return {
+            status = "success",
+            data = {
+                solved = false,
+                complete = true,
+                message = "Max attempts exceeded",
+                result = result,
+                attemptsRemaining = 0
+            }
+        }
+    end
+
+    return {
+        status = "success",
+        data = {
+            solved = false,
+            complete = false,
+            result = result,
+            attemptsRemaining = attemptsRemaining
+        }
+    }
+end
+
+function HeistMinigame.validatePattern(answer, guess)
     if #guess ~= 4 then
-        return { success = false, message = "Guess must be 4 digits" }
+        return { status = "error", error = "Must be 4 digits" }
     end
-
-    heist.metadata.minigameAttempts = heist.metadata.minigameAttempts + 1
 
     local correct = 0
     local present = 0
-    local sequence = heist.minigame.sequence
-    local usedSequence = {}
+    local usedAnswer = {}
     local usedGuess = {}
 
     for i = 1, 4 do
-        if guess[i] == sequence[i] then
+        if guess[i] == answer[i] then
             correct = correct + 1
-            usedSequence[i] = true
+            usedAnswer[i] = true
             usedGuess[i] = true
         end
     end
@@ -57,31 +164,37 @@ function HeistMinigame.validate(heist, playerId, guess)
     for i = 1, 4 do
         if not usedGuess[i] then
             for j = 1, 4 do
-                if not usedSequence[j] and guess[i] == sequence[j] then
+                if not usedAnswer[j] and guess[i] == answer[j] then
                     present = present + 1
-                    usedSequence[j] = true
+                    usedAnswer[j] = true
                     break
                 end
             end
         end
     end
 
-    table.insert(heist.minigame.attempts, {
-        playerId = playerId,
-        guess = guess,
-        result = { correct = correct, present = present }
-    })
+    return {
+        status = "success",
+        data = {
+            solved = (correct == 4),
+            correct = correct,
+            present = present
+        }
+    }
+end
 
-    if correct == 4 then
-        heist:transitionTo(HeistStates.VAULT_OPEN)
-        return { success = true, correct = correct, present = present }
-    end
+function HeistMinigame.validateLockpick(answer, guess)
+    local diff = math.abs(answer - guess)
 
-    local maxAttempts = heist.config.vault.minigame.pattern.maxAttempts
-    if heist.metadata.minigameAttempts >= maxAttempts then
-        heist:transitionTo(HeistStates.FAILED, "Too many minigame attempts")
-        return { success = false, message = "Max attempts exceeded" }
-    end
+    -- i added a tolerance because would be really annoying to guess the perfect position
+    local tolerance = 10
 
-    return { success = false, correct = correct, present = present }
+    return {
+        status = "success",
+        data = {
+            solved = (diff <= tolerance),
+            difference = diff,
+            hint = diff < 30 and "very close" or (diff < 60 and "close" or "far")
+        }
+    }
 end
