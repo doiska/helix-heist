@@ -1,0 +1,90 @@
+import { useClientQuery } from "../hooks/utils/use-client-query";
+import { useUIMutation } from "../hooks/utils/use-client-mutation";
+import { type HeistLobby as HeistLobbyType } from "../types/heist";
+
+export default function LobbyList() {
+  const { data: heistLobbies = [] } = useClientQuery<HeistLobbyType[]>({
+    event: "GetActiveHeistInfo",
+    queryKey: ["heist", "lobbies"],
+  });
+
+  const { mutate } = useUIMutation();
+
+  const handleJoinHeist = async (heistId: string) => {
+    await mutate("JoinHeist", heistId);
+  };
+
+  const createHeist = async () => {
+    await mutate("CreateHeist");
+  };
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-4">
+        <div className="text-zinc-300 text-xs uppercase tracking-wide font-bold">
+          Available Operations ({heistLobbies.length})awdawd
+        </div>
+        <button
+          className="py-4 px-2 bg-emerald-500 text-white h-11 shadow-sm"
+          onClick={createHeist}
+        >
+          Create Heist
+        </button>
+      </div>
+
+      <div className="space-y-2">
+        {heistLobbies.length === 0 ? (
+          <div className="text-center text-zinc-500 py-8 text-sm">
+            No operations available
+          </div>
+        ) : (
+          heistLobbies.map((heist) => (
+            <div
+              key={heist.id}
+              className="bg-black/40 border border-zinc-800 hover:border-zinc-600 hover:bg-black/60 rounded px-4 py-3 transition-all group"
+            >
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex-1 min-w-0">
+                  <div className="text-white font-bold text-sm truncate">
+                    {heist.id}
+                  </div>
+                  <div className="text-zinc-400 text-xs mt-1">
+                    Led by{" "}
+                    <span className="text-zinc-300 font-mono">
+                      {heist.leader}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-6 text-sm">
+                  <div className="text-center">
+                    <div className="text-zinc-500 text-xs uppercase">Crew</div>
+                    <div className="text-white font-bold">
+                      {heist.participants}
+                    </div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-zinc-500 text-xs uppercase">State</div>
+                    <div className="text-yellow-400 font-bold">
+                      {heist.state}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handleJoinHeist(heist.id)}
+                    disabled={!heist.canJoin}
+                    className="bg-blue-600/80 hover:bg-blue-600 disabled:bg-zinc-800 disabled:text-zinc-600 text-white px-4 py-2 rounded font-bold text-xs transition-all border border-blue-500/30 hover:border-blue-500 disabled:border-zinc-700"
+                  >
+                    JOIN
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
