@@ -23,8 +23,9 @@ HeistStates = {
 --- @field startedAt number?
 --- @field finishedAt number?
 --- @field loot { status: { uses: number, maxUses: number, amount: number, currentUser: string? }, playerTotals: table<string, number> }
---- @field minigame { sequence: number[], attempts: { playerId: string, guess: number[], result: { correct: number, present: number } }[] }?
---- @field metadata { alarmTriggered: boolean, policeNotified: boolean, vaultOpenTime: number?, doorsBypassed: string[], minigameAttempts: number }
+--- @field minigames table<string, Minigame>
+--- @field playerProgress table<string, table<string, PlayerMinigameProgress>>
+--- @field metadata { alarmTriggered: boolean, policeNotified: boolean, vaultOpenTime: number?, doorsBypassed: string[] }
 BankHeist = {}
 BankHeist.__index = BankHeist
 
@@ -53,12 +54,14 @@ function BankHeist.new(id, config, leaderId)
         playerTotals = {}
     }
 
+    self.minigames = {}
+    self.playerProgress = {}
+
     self.metadata = {
         alarmTriggered = false,
         policeNotified = false,
         vaultOpenTime = nil,
-        doorsBypassed = {},
-        minigameAttempts = 0
+        doorsBypassed = {}
     }
 
     if config.vault and config.vault.loot then
@@ -71,6 +74,8 @@ function BankHeist.new(id, config, leaderId)
             }
         end
     end
+
+    HeistMinigame.initializeMinigames(self)
 
     return self
 end
