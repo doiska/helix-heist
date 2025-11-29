@@ -1,6 +1,7 @@
 ---@class BankStartConfig
 ---@field minPlayers integer
 ---@field minPoliceOfficers integer
+---@field requiredItems table{ id: string, amount: integer }[]
 
 ---@class BankDoor
 ---@field entity string
