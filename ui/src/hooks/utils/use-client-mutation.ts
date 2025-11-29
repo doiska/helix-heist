@@ -1,15 +1,5 @@
 import { useState } from "preact/hooks";
-import { processCallbackResponse } from "../../lib/event-response";
-
-type CallbackResponse<Data = never> =
-  | {
-      status: "success";
-      data: Data;
-    }
-  | {
-      status: "error";
-      message: string;
-    };
+import { parseCallbackResponse } from "../../lib/event-response";
 
 declare global {
   namespace globalThis {
@@ -37,9 +27,7 @@ export function useUIMutation<Output = unknown>() {
     }, 5000);
 
     const handleMessage = (messageEvent: MessageEvent) => {
-      const response = processCallbackResponse(messageEvent);
-
-      console.log(JSON.stringify(response));
+      const response = parseCallbackResponse(messageEvent);
 
       if (!response.data) {
         console.error(`No callback response by ${event}`);
@@ -49,8 +37,6 @@ export function useUIMutation<Output = unknown>() {
       if (response.name !== `${event}_callback`) {
         return;
       }
-
-      console.log(`Received ${event} callback.`);
 
       if (abortController.signal.aborted) {
         console.error(

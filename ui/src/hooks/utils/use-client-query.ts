@@ -1,6 +1,6 @@
 import { useState, useEffect } from "preact/hooks";
 import { queryCache } from "./query-cache";
-import { processCallbackResponse } from "../../lib/event-response";
+import { parseCallbackResponse } from "../../lib/event-response";
 
 export function useClientQuery<Output = unknown>({
   queryKey,
@@ -34,9 +34,7 @@ export function useClientQuery<Output = unknown>({
     }, 5000);
 
     const handleMessage = (messageEvent: MessageEvent) => {
-      const response = processCallbackResponse(messageEvent);
-
-      console.log(JSON.stringify(response));
+      const response = parseCallbackResponse(messageEvent);
 
       if (!response.data) {
         console.error(`Missing callback response for ${event}`);
@@ -46,8 +44,6 @@ export function useClientQuery<Output = unknown>({
       if (response.name !== `${event}_callback`) {
         return;
       }
-
-      console.log(`Received ${event} callback.`);
 
       //TODO: validate if the event we received is the same as were expecting
 

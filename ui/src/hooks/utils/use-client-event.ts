@@ -1,14 +1,20 @@
 import { useEffect } from "preact/hooks";
+import { parseCallbackResponse } from "../../lib/event-response";
 
-export function useUIEvent(event: string, callback: (event: Event) => void) {
+export function useUIEvent(
+  event: string,
+  callback: <T = unknown>(payload: T) => void,
+) {
   useEffect(() => {
     const abortController = new AbortController();
 
     window.addEventListener(
       "message",
       (clientEvent) => {
-        if (clientEvent.data.event === event) {
-          callback(clientEvent.data.data);
+        const response = parseCallbackResponse(clientEvent);
+
+        if (response.name === event) {
+          callback(response.data);
         }
       },
       {
