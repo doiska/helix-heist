@@ -26,7 +26,6 @@ function HeistManager:createHeist(heistId, config, leaderId)
     self.activeHeists[heistId] = heist
     self.playerHeists[leaderId] = heistId
 
-
     return heist, nil
 end
 
@@ -140,6 +139,10 @@ function HeistManager:leaveHeist(playerId, reason)
     return true, nil
 end
 
+function HeistManager:getPlayerHeistById(playerId)
+    return self.playerHeists[playerId]
+end
+
 -- TODO: add the option to the leader to delete the heist?
 ---@param heistId string
 function HeistManager:removeHeist(heistId)
@@ -239,9 +242,10 @@ RegisterCallback("GetActiveHeistInfo", function()
     }
 end)
 
+
 RegisterCallback("GetUserHeistState", function(player)
     local source = player:GetName()
-    local heistId = HeistManager.playerHeists[source]
+    local heistId = HeistManager:getPlayerHeistById(source)
 
     return {
         status = "success",
