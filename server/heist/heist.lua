@@ -220,12 +220,12 @@ function BankHeist:removeParticipant(playerId)
         end
     end
 
-    for _, loot in pairs(self.loot.status) do
-        -- TODO: should we give the loot to someone else?
-        if loot.currentUser == playerId then
-            loot.currentUser = nil
-        end
-    end
+    -- for _, loot in pairs(self.loot.status) do
+    --     -- TODO: should we give the loot to someone else?
+    --     if loot.currentUser == playerId then
+    --         loot.currentUser = nil
+    --     end
+    -- end
 
     if #self.participants == 0 then
         self:transitionTo(HeistStates.FAILED, "All participants left")
