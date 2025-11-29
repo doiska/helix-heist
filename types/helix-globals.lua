@@ -5,12 +5,14 @@ JSON = JSON
 ---@param json string
 ---@return table
 function JSON.parse(json)
+    return {}
 end
 
 --- Serializes a Lua table into a JSON string.
 ---@param table table
 ---@return string
 function JSON.stringify(table)
+    return ""
 end
 
 --@class HELIXTable

@@ -40,3 +40,7 @@ function TriggerClientEvent(event, source, ...) end
 function RegisterCallback(event, callback)
 
 end
+
+---@param event string
+---@param ... any
+function TriggerCallback(event, ...) end
