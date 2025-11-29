@@ -1,0 +1,205 @@
+---@class HeistManager
+---@field activeHeists table<string, BankHeist>
+---@field playerHeists table<string, string>
+HeistManager = {
+    -- TODO: not completely sure if we should aim for a single source of truth (only a single heist array) or
+    -- 1 array for heists and 1 array for players in heists and focusing in O(1) for our lookup functions (isPlayerInHeist for exmaple)
+    activeHeists = {},
+    playerHeists = {}
+}
+
+---@param heistId string
+---@param config BankConfig
+---@param leaderId string
+---@return BankHeist|nil, string?
+function HeistManager:createHeist(heistId, config, leaderId)
+    if self.activeHeists[heistId] then
+        return nil, "Heist already exists"
+    end
+
+    if self:isPlayerInHeist(leaderId) then
+        return nil, "Player is already in a heist"
+    end
+
+    local heist = BankHeist.new(heistId, config, leaderId)
+
+    self.activeHeists[heistId] = heist
+    self.playerHeists[leaderId] = heistId
+
+
+    return heist, nil
+end
+
+---@param heistId string
+---@return BankHeist|nil
+function HeistManager:getHeist(heistId)
+    return self.activeHeists[heistId]
+end
+
+---@param playerId string
+---@return boolean
+function HeistManager:isPlayerInHeist(playerId)
+    return self.playerHeists[playerId] ~= nil
+end
+
+---@param playerId string
+---@return BankHeist|nil
+function HeistManager:getPlayerHeist(playerId)
+    local heistId = self.playerHeists[playerId]
+
+    if not heistId then
+        return nil
+    end
+
+    return self.activeHeists[heistId]
+end
+
+---@param heistId string
+---@param playerId string
+---@return boolean, string?
+function HeistManager:joinHeist(playerId, heistId)
+    local heist = self.activeHeists[heistId]
+
+    if not heist then
+        return false, "Heist not found"
+    end
+
+    if self:isPlayerInHeist(playerId) then
+        return false, "Player is already in a heist"
+    end
+
+    if heist.state ~= HeistStates.IDLE and heist.state ~= HeistStates.PREPARED then
+        return false, "Heist is not accepting new players"
+    end
+
+    local success = heist:addParticipant(playerId)
+
+    if not success then
+        return false, "Failed to add participant"
+    end
+
+    self.playerHeists[playerId] = heistId
+
+    print(playerId, heistId)
+
+    TriggerClientEvent('HeistPlayerJoined', playerId, {
+        heistId = heistId,
+        state = heist.state,
+        participants = heist.participants,
+        leader = heist.leader
+    })
+
+    return true, nil
+end
+
+RegisterCallback('JoinHeist', function(source, heistId)
+    return HeistManager:joinHeist(source, heistId)
+end)
+
+---@param playerId string
+---@param reason string?
+---@return boolean, string?
+function HeistManager:leaveHeist(playerId, reason)
+    local heistId = self.playerHeists[playerId]
+
+    if not heistId then
+        return false, "Player is not in a heist"
+    end
+
+    local heist = self.activeHeists[heistId]
+
+    if not heist then
+        self.playerHeists[playerId] = nil
+        return false, "Heist not found"
+    end
+
+    heist:removeParticipant(playerId)
+    self.playerHeists[playerId] = nil
+
+    TriggerClientEvent('HeistLeft', playerId, {
+        heistId = heistId,
+        reason = reason
+    })
+
+    if #heist.participants > 0 then
+        heist:broadcastEvent('HeistPlayerLeft', {
+            playerId = playerId,
+            reason = reason,
+            participantCount = #heist.participants,
+            newLeader = heist.leader
+        })
+    end
+
+    if heist.state == HeistStates.FAILED or #heist.participants == 0 then
+        self:removeHeist(heistId)
+    end
+
+    return true, nil
+end
+
+-- TODO: add the option to the leader to delete the heist?
+---@param heistId string
+function HeistManager:removeHeist(heistId)
+    local heist = self.activeHeists[heistId]
+
+    if not heist then
+        return
+    end
+
+    for playerId, pHeistId in pairs(self.playerHeists) do
+        if pHeistId == heistId then
+            self.playerHeists[playerId] = nil
+        end
+    end
+
+    heist:cleanup()
+
+    -- TODO: change the event to something else, we shouldn't need a event only for deletion, might be better to handle like a game state change (aka failed)
+    heist:broadcastEvent("HeistDeleted")
+    self.activeHeists[heistId] = nil
+end
+
+---@param playerId string
+function HeistManager:handlePlayerDisconnect(playerId)
+    if not self:isPlayerInHeist(playerId) then
+        return
+    end
+
+    self:leaveHeist(playerId, "disconnected")
+end
+
+---@return table
+function HeistManager:getActiveHeistsInfo()
+    local info = {}
+
+    for heistId, heist in pairs(self.activeHeists) do
+        table.insert(info, {
+            id = heistId,
+            state = heist.state,
+            participants = heist.participants,
+            leader = heist.leader,
+            canJoin = heist.state == HeistStates.IDLE or heist.state == HeistStates.PREPARED
+        })
+    end
+
+    return info
+end
+
+-- TODO: im not sure if i should leave it here or move to heist-events (some kind of handler for player interactions) or something like that, cleanup later
+RegisterCallback('LeaveHeist', function(source, reason)
+    return HeistManager:leaveHeist(source, reason)
+end)
+
+RegisterCallback("GetActiveHeistInfo", function()
+    return HeistManager:getActiveHeistsInfo()
+end)
+
+RegisterCallback("GetUserHeistState", function(source)
+    local playerId = tostring(source)
+    local heistId = HeistManager.playerHeists[playerId]
+
+    return {
+        inHeist = heistId ~= nil,
+        heistId = heistId
+    }
+end)
