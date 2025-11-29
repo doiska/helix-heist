@@ -78,11 +78,10 @@ end
 ---@param event string
 function BankHeist:broadcastEvent(event, ...)
     for _, playerId in ipairs(self.participants) do
-        TriggerClientEvent(event, tonumber(playerId), ...)
+        TriggerClientEvent(event, playerId, ...)
     end
 end
 
--- no private fn in lua?
 function BankHeist:canTransitionTo(newState)
     local validTransitions = {
         [HeistStates.IDLE] = { HeistStates.PREPARED },
