@@ -145,7 +145,7 @@ function BankHeist:transitionTo(newState, reason)
     return true
 end
 
-function BankHeist:onStateEnter(newState, oldState)
+function BankHeist:onStateEnter(newState, _oldState)
     if newState == HeistStates.ENTRY then
         if not self.config.security or not self.config.security.alarm then
             return
@@ -161,6 +161,7 @@ function BankHeist:onStateEnter(newState, oldState)
         return
     end
 
+    -- cleanup vault open logic and triggers
     if newState == HeistStates.VAULT_OPEN then
         self.metadata.vaultOpenTime = os.time()
 
@@ -218,7 +219,6 @@ function BankHeist:addParticipant(playerId)
     end
 
     table.insert(self.participants, playerId)
-    print("Player .. " .. playerId .. " joined")
 
     if #self.participants == self.config.start.minPlayers then
         self:transitionTo(HeistStates.PREPARED)

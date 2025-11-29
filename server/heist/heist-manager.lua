@@ -81,8 +81,6 @@ function HeistManager:joinHeist(playerId, heistId)
 
     self.playerHeists[playerId] = heistId
 
-    print(playerId, heistId)
-
     heist:broadcastEvent('HeistUpdate', {
         heistId = heistId,
         state = heist.state,
@@ -136,6 +134,10 @@ function HeistManager:startHeist(playerId)
         return false, "Only the leader can start the heist"
     end
 
+    if not heist:canTransitionTo(HeistStates.ENTRY) then
+        return false, "The Heist is not at preparing state, it is currently in state " .. heist.state
+    end
+
     -- loop through all participants and check if they have necessary items
     for index, value in ipairs(heist.participants) do
         for _, requiredItem in ipairs(heist.config.start.requiredItems) do
@@ -148,14 +150,12 @@ function HeistManager:startHeist(playerId)
         end
     end
 
-    if not heist:canTransitionTo(HeistStates.ENTRY) then
-        return false, "The Heist is not at preparing state"
-    end
-
     heist:transitionTo(HeistStates.ENTRY)
 
     --todo: teleport players to the heist entrace or mark on their map
     heist:broadcastState()
+
+    return true, "Started!"
 end
 
 -- TODO: add the option to the leader to delete the heist?
