@@ -36,6 +36,12 @@ function Timer.ClearTimeout(intervalId) end
 function TriggerClientEvent(event, source, ...) end
 
 ---@param event string
+---@param ... any
+function RegisterClientEvent(event, ...)
+
+end
+
+---@param event string
 ---@param callback fun(source: any, ...): any
 function RegisterCallback(event, callback)
 
