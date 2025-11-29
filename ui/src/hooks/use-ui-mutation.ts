@@ -8,12 +8,26 @@ type CallbackResponse<Data = never> =
       message: string;
     };
 
+declare global {
+  namespace globalThis {
+    function hEvent(event: string, payload?: unknown): void;
+  }
+}
+
 export function useUIMutation() {
   async function mutate<Output = unknown, Input = unknown>(
     event: string,
     payload?: Input,
   ) {
+    const abortController = new AbortController();
+
     const handleCallback = (result: CallbackResponse<Output>) => {
+      setTimeout(() => {
+        if (!abortController.signal.aborted) {
+          abortController.abort("Timed out");
+        }
+      }, 5000);
+
       if (result.status === "success") {
         return result.data;
       } else {
@@ -28,8 +42,8 @@ export function useUIMutation() {
         handleCallback(result);
       },
       {
-        // im trying this new static to prevent memory leaks and auto cleanup the event
-        signal: AbortSignal.timeout(5000),
+        // using a abort controller with auto cleanup (via timeout) to avoid mem leak
+        signal: abortController.signal,
       },
     );
 
