@@ -82,11 +82,12 @@ function HeistManager:joinHeist(playerId, heistId)
 
     print(playerId, heistId)
 
-    TriggerClientEvent('HeistPlayerJoined', playerId, {
+    heist:broadcastEvent('HeistUpdate', {
         heistId = heistId,
         state = heist.state,
         participants = heist.participants,
-        leader = heist.leader
+        leader = heist.leader,
+        canJoin = heist.state == HeistStates.IDLE or heist.state == HeistStates.PREPARED
     })
 
     return true, nil
@@ -116,17 +117,23 @@ function HeistManager:leaveHeist(playerId, reason)
     heist:removeParticipant(playerId)
     self.playerHeists[playerId] = nil
 
-    TriggerClientEvent('HeistLeft', playerId, {
+    TriggerClientEvent('HeistUpdate', playerId, {
         heistId = heistId,
-        reason = reason
+        deleted = true
     })
 
     if #heist.participants > 0 then
-        heist:broadcastEvent('HeistPlayerLeft', {
-            playerId = playerId,
-            reason = reason,
-            participantCount = #heist.participants,
-            newLeader = heist.leader
+        heist:broadcastEvent('HeistUpdate', {
+            heistId = heistId,
+            state = heist.state,
+            participants = heist.participants,
+            leader = heist.leader,
+            canJoin = heist.state == HeistStates.IDLE or heist.state == HeistStates.PREPARED
+        })
+    else
+        heist:broadcastEvent('HeistUpdate', {
+            heistId = heistId,
+            deleted = true
         })
     end
 
@@ -186,12 +193,46 @@ function HeistManager:getActiveHeistsInfo()
 end
 
 -- TODO: im not sure if i should leave it here or move to heist-events (some kind of handler for player interactions) or something like that, cleanup later
+
+RegisterCallback("CreateHeist", function(source, ...)
+    print("Received CreateHeist server-side")
+    -- hardcoded bank cfg for now (need to add to the ui)
+    local heist, errorMessage = HeistManager:createHeist(source, Config.Banks.central, source)
+
+    if heist == nil then
+        return {
+            status = "error",
+            message = errorMessage
+        }
+    end
+
+    return {
+        status = "success",
+        data = heist
+    }
+end)
+
 RegisterCallback('LeaveHeist', function(source, reason)
-    return HeistManager:leaveHeist(source, reason)
+    local success, errorMessage = HeistManager:leaveHeist(source, reason)
+
+    if not success then
+        return {
+            status = "error",
+            message = errorMessage
+        }
+    end
+
+    return {
+        status = success,
+        data = {}
+    }
 end)
 
 RegisterCallback("GetActiveHeistInfo", function()
-    return HeistManager:getActiveHeistsInfo()
+    return {
+        status = "success",
+        data = HeistManager:getActiveHeistsInfo()
+    }
 end)
 
 RegisterCallback("GetUserHeistState", function(source)
@@ -199,7 +240,10 @@ RegisterCallback("GetUserHeistState", function(source)
     local heistId = HeistManager.playerHeists[playerId]
 
     return {
-        inHeist = heistId ~= nil,
-        heistId = heistId
+        status = "success",
+        data = {
+            inHeist = heistId ~= nil,
+            heistId = heistId
+        }
     }
 end)
