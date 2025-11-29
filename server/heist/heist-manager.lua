@@ -144,6 +144,8 @@ function HeistManager:startHeist(playerId)
             local mockInventoryCount = math.random(1, 10)
             local hasItem = mockInventoryCount >= requiredItem.amount
 
+            -- todo: we could sum total items instead of requiring all users to have all items
+
             if not hasItem then
                 return false, "Not all participants have necessary items"
             end
