@@ -27,6 +27,23 @@ DebugCommand("heist:start", function()
     end)
 end)
 
+DebugCommand("heist:join", function(args)
+    local heistId = args[1]
+
+    if not heistId then
+        print("No heist id found")
+        return
+    end
+
+    TriggerCallback("JoinHeist", function(result)
+        if result.status == "success" then
+            print("Joined heist!")
+        elseif result.status == "error" then
+            print(result.message)
+        end
+    end, heistId)
+end)
+
 DebugCommand("heist:leave", function()
     TriggerCallback("LeaveHeist", function(result)
         if result.status == "success" then

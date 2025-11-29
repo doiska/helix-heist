@@ -59,14 +59,14 @@ end
 ---@param playerId string
 ---@return boolean, string?
 function HeistManager:joinHeist(playerId, heistId)
+    if self:isPlayerInHeist(playerId) then
+        return false, "Player is already in a heist"
+    end
+
     local heist = self.activeHeists[heistId]
 
     if not heist then
         return false, "Heist not found"
-    end
-
-    if self:isPlayerInHeist(playerId) then
-        return false, "Player is already in a heist"
     end
 
     if heist.state ~= HeistStates.IDLE and heist.state ~= HeistStates.PREPARED then

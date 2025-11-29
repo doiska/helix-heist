@@ -25,7 +25,7 @@ RegisterCallback('JoinHeist', function(player, heistId)
     local source = player:GetName()
     local success, errorMessage = HeistManager:joinHeist(source, heistId)
 
-    if not success then
+    if success then
         return {
             status = "success",
             data = {}
@@ -33,7 +33,7 @@ RegisterCallback('JoinHeist', function(player, heistId)
     end
 
     return {
-        status = success,
+        status = "error",
         message = errorMessage
     }
 end)
