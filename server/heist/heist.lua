@@ -64,6 +64,12 @@ function BankHeist.new(id, config, leaderId)
         doorsBypassed = {}
     }
 
+    if Config.Debug then
+        print("disabled Heist player requirements because Debug is true")
+        self.config.start.minPlayers = 0
+        self.config.start.minPoliceOfficers = 0
+    end
+
     if config.vault and config.vault.loot then
         for i, lootConfig in ipairs(config.vault.loot) do
             self.loot.status[i] = {
