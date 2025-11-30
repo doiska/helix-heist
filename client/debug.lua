@@ -6,11 +6,6 @@ while not DebugCommand do
     Wait(50)
 end
 
-RegisterClientEvent("HeistUpdate", function(...)
-    print("Received HeistUpdate")
-    HELIXTable.Dump(...)
-end)
-
 DebugCommand("heist:create", function(args)
     TriggerCallback("CreateHeist", function(result)
         if result.status == "success" then
