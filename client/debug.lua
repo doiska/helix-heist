@@ -2,6 +2,10 @@ if not Config.Debug then
     return
 end
 
+while not DebugCommand do
+    Wait(50)
+end
+
 RegisterClientEvent("HeistUpdate", function(...)
     print("Received HeistUpdate")
     HELIXTable.Dump(...)
