@@ -142,7 +142,7 @@ DebugCommand("submitminigame", function(commandArgs)
 
         local data = result.data
 
-        if data.result and data.solved then
+        if data.solved then
             activeMinigame = nil
             print("Solved!")
             return
@@ -164,8 +164,8 @@ DebugCommand("submitminigame", function(commandArgs)
         elseif activeMinigame.minigameType == "lockpick" then
             print(string.format(
                 "Diff: %d (%s) | Left: %d",
-                data.result.difference,
-                data.result.hint,
+                data.progress.difference,
+                data.progress.hint,
                 data.attemptsRemaining
             ))
         end
