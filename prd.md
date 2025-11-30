@@ -1,3 +1,10 @@
+Important:
+- For some reason I saw some of the server code being sent to the client, I believe that's a bug, probably because there's no encryption yet.
+- I noticed it after moving shared/config.lua to server/config.lua, preventing the user from knowing (through some kind of client code dump) where the door, vault, etc are.
+
+Data structure:
+- I couldn't find a unique id in the documentation, had the GetPlayerById, but no id. So I was storing the player name (found in HPlayer), but it's not possible to send a ClientEvent with that. I'm now storing the HPlayer instance, but i'm not comfortable with this approach, since storing an "object" as key can lead to trick situations. I saw QBCore doing it, so I think it's fine. https://github.com/hypersonic-laboratories/qbcore-rp/blob/f3a0f0379e2b97570d72f74f65346adf8411cd92/qb-core/Server/player.lua#L20
+
 State Machine:
   Used a pretty straightforward approach that can be improved later.
   By using "canTransitionTo" and validating state transitions we can block invalid states.
@@ -8,7 +15,9 @@ States (in order of transition):
   - If someone leaves it goes back to idle.
   - I'm not sure if that was the right decision, but I made it based on the script being kinda arcade like GTA Online heists, where they have a lobby and heist per lobby.
 - ENTRY -> Players are ready to attempt to enter the bank
-  - If someone leaves, it transitions to FAILED then after cleanup interval it **SHOULD (not implemented)** go back to IDLE.
+
+Data-exposing tradeoffs:
+- In the entry phase, the client-side has access to all door positions, thats because I couldn't find in the documentation a way to get player position server-side. And that's also a trade-off choice, I think we'd be hurting user experience without much gain, by removing, for example, the possibility of waypoints in each door.
 
 Loot:
 - States
