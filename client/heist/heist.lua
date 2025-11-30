@@ -23,5 +23,9 @@ local function handleHeistUpdate(data)
 end
 
 RegisterClientEvent("HeistUpdate", function(data)
+    print("Received HeistUpdate")
+    HELIXTable.Dump(data)
     handleHeistUpdate(data)
 end)
+
+_G.CurrentHeist = CurrentHeist
