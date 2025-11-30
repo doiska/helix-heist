@@ -1,6 +1,6 @@
 HeistMinigame = {}
 
-function HeistMinigame.initializeMinigames(heist)
+function HeistMinigame.init(heist)
     local config = heist.config
 
     if config.vault and config.vault.minigame then
@@ -56,6 +56,14 @@ function HeistMinigame.validate(heist, playerId, minigameId, attempt)
         return { status = "error", message = "Minigame not found" }
     end
 
+    if minigame.type == "door" and heist.state ~= HeistStates.ENTRY then
+        return { status = "error", message = "Door is not available right now" }
+    end
+
+    if minigame.type == "vault" and heist.state ~= HeistStates.VAULT_LOCKED then
+        return { status = "error", message = "Vault is not ready yet" }
+    end
+
     if minigame.solved then
         return { status = "error", message = "Already solved by " .. minigame.solvedBy }
     end
@@ -99,6 +107,10 @@ function HeistMinigame.validate(heist, playerId, minigameId, attempt)
         minigame.solved = true
         minigame.solvedBy = playerId
         progress.completed = true
+
+        if minigame.type == "door" then
+            HeistDoors.markDoorBypassed(heist, minigameId, playerId)
+        end
 
         if minigame.type == "vault" then
             heist:transitionTo(HeistStates.VAULT_OPEN)

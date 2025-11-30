@@ -25,7 +25,8 @@ HeistStates = {
 --- @field loot { status: { uses: number, maxUses: number, amount: number, currentUser: string? }, playerTotals: table<string, number> }
 --- @field minigames table<string, Minigame>
 --- @field playerProgress table<string, table<string, PlayerMinigameProgress>>
---- @field metadata { alarmTriggered: boolean, policeNotified: boolean, vaultOpenTime: number?, doorsBypassed: string[] }
+--- @field metadata { alarmTriggered: boolean, policeNotified: boolean, vaultOpenTime: number? }
+--- @field doors table<string, { id: string, config: BankDoor, opened: boolean }>
 BankHeist = {}
 BankHeist.__index = BankHeist
 
@@ -60,9 +61,9 @@ function BankHeist.new(id, config, leaderId)
     self.metadata = {
         alarmTriggered = false,
         policeNotified = false,
-        vaultOpenTime = nil,
-        doorsBypassed = {}
+        vaultOpenTime = nil
     }
+
 
     if Config.Debug then
         print("disabled Heist player requirements because Debug is true")
@@ -81,7 +82,8 @@ function BankHeist.new(id, config, leaderId)
         end
     end
 
-    HeistMinigame.initializeMinigames(self)
+    HeistDoors.init(self)
+    HeistMinigame.init(self)
 
     return self
 end
@@ -153,11 +155,17 @@ end
 
 function BankHeist:onStateEnter(newState, _oldState)
     if newState == HeistStates.ENTRY then
+        if HeistDoors.getTotalDoors(self) == 0 then
+            self:transitionTo(HeistStates.VAULT_LOCKED)
+            return
+        end
+
         if not self.config.security or not self.config.security.alarm then
             return
         end
 
         local alarmChance = self.config.security.alarm.silentAlarmChance or 0
+
         if math.random(1, 100) > alarmChance then
             return
         end
@@ -167,7 +175,6 @@ function BankHeist:onStateEnter(newState, _oldState)
         return
     end
 
-    -- cleanup vault open logic and triggers
     if newState == HeistStates.VAULT_OPEN then
         self.metadata.vaultOpenTime = os.time()
 
@@ -388,4 +395,6 @@ function BankHeist:cleanup()
             self.lootTimers[lootIndex] = nil
         end
     end
+
+    HeistDoors.cleanup(self)
 end

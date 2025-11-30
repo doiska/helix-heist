@@ -1,3 +1,7 @@
+if not Config.Debug then
+    return
+end
+
 local Console = GetActorByTag('HConsole')
 local commands = {}
 

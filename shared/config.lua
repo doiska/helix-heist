@@ -28,7 +28,7 @@ Config.Banks = {
             doors = {
                 {
                     entity = "/Game/HelixDoors/Blueprints/BP_Door_Rotating.BP_Door_Rotating_C",
-                    lockType = nil, -- laptop to solve the game
+                    lockType = "lockpick",
                     location = Vector(1119.21, -688.387, 100.0),
                     rotation = Rotator(0, 0, 0)
                 },
