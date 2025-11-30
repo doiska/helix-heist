@@ -6,6 +6,10 @@
     "server/*.lua"
   ],
   "client": [
-    "client/*.lua"
+    "client/lib/command.lua",
+    "client/heist/*.lua",
+    "client/minigame.lua",
+    "client/ui.lua",
+    "client/debug.lua"
   ]
 }
