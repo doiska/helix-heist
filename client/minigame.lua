@@ -82,7 +82,7 @@ DebugCommand("heist:door", function()
         activeMinigame = result.data
 
         if result.data.minigameType == "lockpick" then
-            print(string.format("Lockpick %s (Attempts left: %d) -> use /submitminigame %s <angle>", door.id,
+            print(string.format("Lockpick %s (Attempts left: %d) /submitminigame %s <angle>", door.id,
                 result.data.attemptsRemaining, door.id))
         else
             print(string.format("Minigame %s ready (Attempts left: %d)", door.id, result.data.attemptsRemaining))
@@ -103,9 +103,6 @@ DebugCommand("submitminigame", function(commandArgs)
     for i = 2, #commandArgs do
         table.insert(args, commandArgs[i])
     end
-
-    HELIXTable.Dump(commandArgs)
-    HELIXTable.Dump(args)
 
     local attempt = nil
 
@@ -141,10 +138,13 @@ DebugCommand("submitminigame", function(commandArgs)
             return
         end
 
+        HELIXTable.Dump(result)
+
         local data = result.data
 
         if data.result and data.solved then
             activeMinigame = nil
+            print("Solved!")
             return
         end
 
@@ -157,8 +157,8 @@ DebugCommand("submitminigame", function(commandArgs)
         if activeMinigame.minigameType == "pattern" then
             print(string.format(
                 "Correct: %d Present: %d | Left: %d",
-                data.result.correct,
-                data.result.present,
+                data.progress.correct,
+                data.progress.present,
                 data.attemptsRemaining
             ))
         elseif activeMinigame.minigameType == "lockpick" then
