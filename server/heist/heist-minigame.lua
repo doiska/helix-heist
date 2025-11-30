@@ -103,7 +103,14 @@ function HeistMinigame.validate(heist, playerId, minigameId, attempt)
     progress.attemptsCount = progress.attemptsCount + 1
     table.insert(progress.attempts, { attempt = attempt, result = result })
 
-    if result.status == "success" then
+    if result.status ~= "success" then
+        return {
+            status = "error",
+            message = result.error
+        }
+    end
+
+    if result.data.solved then
         minigame.solved = true
         minigame.solvedBy = playerId
         progress.completed = true
@@ -121,9 +128,9 @@ function HeistMinigame.validate(heist, playerId, minigameId, attempt)
             data = {
                 solved = true,
                 complete = true,
-                result = result,
                 message = "Solved!",
-                attemptsRemaining = 0
+                attemptsRemaining = 0,
+                progress = result.data
             }
         }
     end
@@ -133,13 +140,15 @@ function HeistMinigame.validate(heist, playerId, minigameId, attempt)
     if attemptsRemaining <= 0 then
         progress.completed = true
 
+        -- TODO: break the lockpick or remove the item
+
         return {
             status = "success",
             data = {
                 solved = false,
                 complete = true,
                 message = "Max attempts exceeded",
-                result = result,
+                progress = result.data,
                 attemptsRemaining = 0
             }
         }
@@ -150,7 +159,7 @@ function HeistMinigame.validate(heist, playerId, minigameId, attempt)
         data = {
             solved = false,
             complete = false,
-            result = result,
+            progress = result.data,
             message = "Incorrect",
             attemptsRemaining = attemptsRemaining
         }
