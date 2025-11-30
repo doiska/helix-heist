@@ -44,7 +44,7 @@ Config.Banks = {
             }
         },
         vault = {
-            location = Vector(1119.21, -688.387, 100.0),
+            location = Vector(59.63, 289.30, 91.65),
             openDuration = 3 * 60, -- duration that the vault will stay open
             policeAutoArriveInSeconds = 3 * 60,
             minigame = {
@@ -52,7 +52,7 @@ Config.Banks = {
                 pattern = {
                     sequenceLength = 5,
                     timeLimitInSeconds = 30,
-                    maxAttempts = 5
+                    maxAttempts = 999
                 }
             },
             loot = {
@@ -66,7 +66,7 @@ Config.Banks = {
                     }
                 },
                 {
-                    entity = "",
+                    entity = "/Game/QBCore/Meshes/SM_ATM.SM_ATM",
                     location = Vector(1119.21, -688.387, 100.0),
                     maxUses = 1,
                     channelingTimeInSeconds = 5,

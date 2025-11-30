@@ -173,6 +173,9 @@ function HeistMinigame.validatePattern(answer, guess)
 
     local correct = 0
     local present = 0
+    local correctNumbers = {}
+    local misplacedNumbers = {}
+    local wrongNumbers = {}
     local usedAnswer = {}
     local usedGuess = {}
 
@@ -181,6 +184,7 @@ function HeistMinigame.validatePattern(answer, guess)
             correct = correct + 1
             usedAnswer[i] = true
             usedGuess[i] = true
+            table.insert(correctNumbers, { index = i, value = guess[i] })
         end
     end
 
@@ -190,8 +194,14 @@ function HeistMinigame.validatePattern(answer, guess)
                 if not usedAnswer[j] and guess[i] == answer[j] then
                     present = present + 1
                     usedAnswer[j] = true
+                    usedGuess[i] = true
+                    table.insert(misplacedNumbers, { index = i, value = guess[i] })
                     break
                 end
+            end
+
+            if not usedGuess[i] then
+                table.insert(wrongNumbers, { index = i, value = guess[i] })
             end
         end
     end
@@ -201,7 +211,10 @@ function HeistMinigame.validatePattern(answer, guess)
         data = {
             solved = (correct == 4),
             correct = correct,
-            present = present
+            present = present,
+            correctNumbers = correctNumbers,
+            misplacedNumbers = misplacedNumbers,
+            wrongNumbers = wrongNumbers
         }
     }
 end
@@ -210,7 +223,7 @@ function HeistMinigame.validateLockpick(answer, guess)
     local diff = math.abs(answer - guess)
 
     -- i added a tolerance because would be really annoying to guess the perfect position
-    local tolerance = 10
+    local tolerance = 40 -- was 10, increased to 40 only for testing
 
     return {
         status = "success",
