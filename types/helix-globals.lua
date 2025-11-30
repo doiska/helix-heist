@@ -24,3 +24,8 @@ HELIXTable = HELIXTable
 ---@param initial any
 ---@return any
 function HELIXTable.reduce(table, reducer, initial) end
+
+--- Dumps a table to the console.
+---@param table table
+function HELIXTable.Dump(table)
+end
