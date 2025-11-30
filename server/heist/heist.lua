@@ -1,50 +1,39 @@
----@enum HeistStates
-HeistStates = {
-    IDLE = "IDLE",                 -- leader still waiting for players
-    PREPARED = "PREPARED",         -- minPlayers joined, ready to start
-    ENTRY = "ENTRY",               -- heist started, they need to open doors
-    VAULT_LOCKED = "VAULT_LOCKED", -- all doors opened, vault locked
-    VAULT_OPEN = "VAULT_OPEN",     -- vault unlocked, players can enter (I think this state is redundant because of "LOOTING")
-    LOOTING = "LOOTING",           -- players are in looting phase, police notified
-    ESCAPE = "ESCAPE",             -- vault auto-close after X seconds
-    COMPLETE = "COMPLETE",         -- players have completed the heist by escaping from radius
-    FAILED = "FAILED",             -- players have somehow failed: ran out of time
-    CLEANUP = "CLEANUP"            -- everything cleaned up, removing players
-}
+--  this class represents the player instance server-side
+---@class Player
 
 ---@class BankHeist
 --- @field id string
 --- @field config BankConfig
 --- @field state HeistStates
---- @field participants string[]
---- @field leader string
+--- @field participants Player[]
+--- @field leader Player
 --- @field timers table
 --- @field lootTimers table
 --- @field createdAt number
 --- @field startedAt number?
 --- @field finishedAt number?
---- @field loot { status: { uses: number, maxUses: number, amount: number, currentUser: string? }, playerTotals: table<string, number> }
+--- @field loot { status: { uses: number, maxUses: number, amount: number, currentUser: Player? }, playerTotals: table<Player, number> }
 --- @field minigames table<string, Minigame>
---- @field playerProgress table<string, table<string, PlayerMinigameProgress>>
+--- @field playerProgress table<Player, table<string, PlayerMinigameProgress>>
 --- @field metadata { alarmTriggered: boolean, policeNotified: boolean, vaultOpenTime: number? }
 --- @field doors table<string, { id: string, config: BankDoor, opened: boolean }>
 BankHeist = {}
 BankHeist.__index = BankHeist
 
 --- @param id string
---- @param leaderId string
+--- @param playerLeader Player
 --- @param config BankConfig
-function BankHeist.new(id, config, leaderId)
+function BankHeist.new(id, config, playerLeader)
     local self = setmetatable({}, BankHeist)
 
     self.id = id
     self.config = config
     self.state = HeistStates.IDLE
     self.participants = {
-        leaderId
+        playerLeader
     }
 
-    self.leader = leaderId
+    self.leader = playerLeader
     self.timers = {}
     self.lootTimers = {}
     self.createdAt = os.time()
@@ -97,16 +86,13 @@ end
 
 ---@param event string
 function BankHeist:broadcastEvent(event, payload)
-    for _, playerId in ipairs(self.participants) do
-        print("broadcastEvent " .. event .. " to player " .. playerId)
-        local player = GetPlayerById(playerId)
-        TriggerClientEvent(player, event, payload)
+    for _, player in ipairs(self.participants) do
+        if not player then
+            print("Player not found.")
+            return
+        end
 
-        -- if payload then
-        --     TriggerClientEvent(player, event, payload)
-        -- else
-        --     TriggerClientEvent(player, event)
-        -- end
+        TriggerClientEvent(player, event, payload)
     end
 end
 
