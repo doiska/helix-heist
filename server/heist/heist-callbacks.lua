@@ -159,12 +159,11 @@ RegisterCallback("StartMinigame", function(player, minigameId)
 end)
 
 RegisterCallback("SubmitMinigameAttempt", function(player, minigameId, attempt)
-    local playerId = player:GetName()
-    local heist = HeistManager:getPlayerHeist(playerId)
+    local heist = HeistManager:getPlayerHeist(player)
 
     if not heist then
         return { status = "error", message = "Not in a heist" }
     end
 
-    return HeistMinigame.validate(heist, playerId, minigameId, attempt)
+    return HeistMinigame.validate(heist, player, minigameId, attempt)
 end)
