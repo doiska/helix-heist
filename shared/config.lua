@@ -1,6 +1,10 @@
 Config = {}
 
-Config.Debug = true -- Disables start requirements
+Config.Debug = {
+    enabled = true,
+    disableItemRequirement = true,
+    disableMinPlayersRequirement = true
+}
 
 Config.Persistence = {
     type = "json",
@@ -15,6 +19,7 @@ Config.Persistence = {
 ---@type BankCfg
 Config.Banks = {
     central = {
+        id = "central",
         label = "Central Bank",
         start = {
             minPlayers = 4,        -- ignored in debug mode

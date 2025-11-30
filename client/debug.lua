@@ -1,4 +1,4 @@
-if not Config.Debug then
+if not Config.Debug.enabled then
     return
 end
 
@@ -32,6 +32,11 @@ DebugCommand("heist:start", function()
 end)
 
 DebugCommand("heist:join", function(args)
+    if not args or #args ~= 1 then
+        print("Use heist:join <heistId>")
+        return
+    end
+
     local heistId = args[1]
 
     if not heistId then

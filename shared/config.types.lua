@@ -65,6 +65,7 @@
 ---@field police BankEscapePoliceConfig|nil
 
 ---@class BankConfig
+---@field id string
 ---@field label string
 ---@field start BankStartConfig
 ---@field security BankSecurityConfig
