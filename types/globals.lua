@@ -30,10 +30,10 @@ function Timer.ClearInterval(intervalId) end
 function Timer.ClearTimeout(intervalId) end
 
 -- TODO: update target, idk what type source is in helix
----@param event string
 ---@param player any
+---@param event string
 ---@param ... any
-function TriggerClientEvent(event, player, ...) end
+function TriggerClientEvent(player, event, ...) end
 
 ---@param event string
 ---@param ... any
