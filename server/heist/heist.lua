@@ -1,14 +1,15 @@
 ---@enum HeistStates
 HeistStates = {
-    IDLE = "IDLE",
-    PREPARED = "PREPARED",
-    ENTRY = "ENTRY",
-    VAULT_LOCKED = "VAULT_LOCKED",
-    VAULT_OPEN = "VAULT_OPEN",
-    LOOTING = "LOOTING",
-    ESCAPE = "ESCAPE",
-    COMPLETE = "COMPLETE",
-    FAILED = "FAILED"
+    IDLE = "IDLE",                 -- leader still waiting for players
+    PREPARED = "PREPARED",         -- minPlayers joined, ready to start
+    ENTRY = "ENTRY",               -- heist started, they need to open doors
+    VAULT_LOCKED = "VAULT_LOCKED", -- all doors opened, vault locked
+    VAULT_OPEN = "VAULT_OPEN",     -- vault unlocked, players can enter (I think this state is redundant because of "LOOTING")
+    LOOTING = "LOOTING",           -- players are in looting phase, police notified
+    ESCAPE = "ESCAPE",             -- vault auto-close after X seconds
+    COMPLETE = "COMPLETE",         -- players have completed the heist by escaping from radius
+    FAILED = "FAILED",             -- players have somehow failed: ran out of time
+    CLEANUP = "CLEANUP"            -- everything cleaned up, removing players
 }
 
 ---@class BankHeist
@@ -65,10 +66,16 @@ function BankHeist.new(id, config, leaderId)
     }
 
 
-    if Config.Debug then
-        print("disabled Heist player requirements because Debug is true")
-        self.config.start.minPlayers = 0
-        self.config.start.minPoliceOfficers = 0
+    if Config.Debug.enabled then
+        if Config.Debug.disableItemRequirement then
+            self.config.start.requiredItems = {}
+        end
+
+        if Config.Debug.disableMinPlayersRequirement then
+            self.config.start.minPlayers = 0
+            self.config.start.minPoliceOfficers = 0
+            self.state = HeistStates.PREPARED
+        end
     end
 
     if config.vault and config.vault.loot then
@@ -89,20 +96,43 @@ function BankHeist.new(id, config, leaderId)
 end
 
 ---@param event string
-function BankHeist:broadcastEvent(event, ...)
+function BankHeist:broadcastEvent(event, payload)
     for _, playerId in ipairs(self.participants) do
-        TriggerClientEvent(event, playerId, ...)
+        print("broadcastEvent " .. event .. " to player " .. playerId)
+        local player = GetPlayerById(playerId)
+        TriggerClientEvent(player, event, payload)
+
+        -- if payload then
+        --     TriggerClientEvent(player, event, payload)
+        -- else
+        --     TriggerClientEvent(player, event)
+        -- end
     end
 end
 
 function BankHeist:broadcastState()
-    self:broadcastEvent('HeistUpdate', {
+    local payload = {
         heistId = self.id,
         state = self.state,
         participants = self.participants,
         leader = self.leader,
         canJoin = self.state == HeistStates.IDLE or self.state == HeistStates.PREPARED
-    })
+    }
+
+    if self.state == HeistStates.ENTRY then
+        payload.doors = HeistDoors.getClientDoors(self)
+    end
+
+    if self.state == HeistStates.VAULT_LOCKED or
+        self.state == HeistStates.VAULT_OPEN or
+        self.state == HeistStates.LOOTING
+    then
+        payload.vault = {
+            location = self.config.vault and self.config.vault.location or nil
+        }
+    end
+
+    self:broadcastEvent('HeistUpdate', payload)
 end
 
 function BankHeist:canTransitionTo(newState)

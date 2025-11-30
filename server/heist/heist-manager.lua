@@ -138,7 +138,6 @@ function HeistManager:startHeist(playerId)
         return false, "The Heist is not at preparing state, it is currently in state " .. heist.state
     end
 
-    -- loop through all participants and check if they have necessary items
     for index, value in ipairs(heist.participants) do
         for _, requiredItem in ipairs(heist.config.start.requiredItems) do
             local mockInventoryCount = math.random(1, 10)
@@ -211,5 +210,3 @@ function HeistManager:getActiveHeistsInfo()
 
     return info
 end
-
--- TODO: im not sure if i should leave it here or move to heist-events (some kind of handler for player interactions) or something like that, cleanup later
