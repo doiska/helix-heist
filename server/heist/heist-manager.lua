@@ -12,7 +12,7 @@ HeistManager = {
 
 ---@param heistId string
 ---@param config BankConfig
----@param leaderId string
+---@param leaderId Player
 ---@return BankHeist|nil, string?
 function HeistManager:createHeist(heistId, config, leaderId)
     if self.activeHeists[heistId] then
@@ -37,16 +37,16 @@ function HeistManager:getHeist(heistId)
     return self.activeHeists[heistId]
 end
 
----@param playerId string
+---@param player Player
 ---@return boolean
-function HeistManager:isPlayerInHeist(playerId)
-    return self.playerHeists[playerId] ~= nil
+function HeistManager:isPlayerInHeist(player)
+    return self.playerHeists[player] ~= nil
 end
 
----@param playerId string
+---@param player string
 ---@return BankHeist|nil
-function HeistManager:getPlayerHeist(playerId)
-    local heistId = self.playerHeists[playerId]
+function HeistManager:getPlayerHeist(player)
+    local heistId = self.playerHeists[player]
 
     if not heistId then
         return nil
@@ -56,10 +56,10 @@ function HeistManager:getPlayerHeist(playerId)
 end
 
 ---@param heistId string
----@param playerId string
+---@param player Player
 ---@return boolean, string?
-function HeistManager:joinHeist(playerId, heistId)
-    if self:isPlayerInHeist(playerId) then
+function HeistManager:joinHeist(player, heistId)
+    if self:isPlayerInHeist(player) then
         return false, "Player is already in a heist"
     end
 
@@ -73,13 +73,13 @@ function HeistManager:joinHeist(playerId, heistId)
         return false, "Heist is not accepting new players"
     end
 
-    local success = heist:addParticipant(playerId)
+    local success = heist:addParticipant(player)
 
     if not success then
         return false, "Failed to add participant"
     end
 
-    self.playerHeists[playerId] = heistId
+    self.playerHeists[player] = heistId
 
     heist:broadcastEvent('HeistUpdate', {
         heistId = heistId,
@@ -92,11 +92,11 @@ function HeistManager:joinHeist(playerId, heistId)
     return true, nil
 end
 
----@param playerId string
+---@param player Player
 ---@param reason string?
 ---@return boolean, string?
-function HeistManager:leaveHeist(playerId, reason)
-    local heistId = self.playerHeists[playerId]
+function HeistManager:leaveHeist(player, reason)
+    local heistId = self.playerHeists[player]
 
     if not heistId then
         return false, "Player is not in a heist"
@@ -105,12 +105,12 @@ function HeistManager:leaveHeist(playerId, reason)
     local heist = self.activeHeists[heistId]
 
     if not heist then
-        self.playerHeists[playerId] = nil
+        self.playerHeists[player] = nil
         return false, "Heist not found"
     end
 
-    heist:removeParticipant(playerId)
-    self.playerHeists[playerId] = nil
+    heist:removeParticipant(player)
+    self.playerHeists[player] = nil
 
     heist:broadcastState()
 
@@ -121,14 +121,14 @@ function HeistManager:leaveHeist(playerId, reason)
     return true, nil
 end
 
-function HeistManager:startHeist(playerId)
-    local heist = self:getPlayerHeist(playerId)
+function HeistManager:startHeist(player)
+    local heist = self:getPlayerHeist(player)
 
     if not heist then
         return false, "No heist found"
     end
 
-    local isLeader = heist.leader == playerId
+    local isLeader = heist.leader == player
 
     if not isLeader then
         return false, "Only the leader can start the heist"
@@ -168,9 +168,9 @@ function HeistManager:removeHeist(heistId)
         return
     end
 
-    for playerId, pHeistId in pairs(self.playerHeists) do
+    for player, pHeistId in pairs(self.playerHeists) do
         if pHeistId == heistId then
-            self.playerHeists[playerId] = nil
+            self.playerHeists[player] = nil
         end
     end
 
@@ -181,17 +181,17 @@ function HeistManager:removeHeist(heistId)
     self.activeHeists[heistId] = nil
 end
 
-function HeistManager:getPlayerHeistById(playerId)
-    return self.playerHeists[playerId]
+function HeistManager:getPlayerHeistById(player)
+    return self.playerHeists[player]
 end
 
----@param playerId string
-function HeistManager:handlePlayerDisconnect(playerId)
+---@param player Player
+function HeistManager:handlePlayerDisconnect(player)
     if not self:isPlayerInHeist(playerId) then
         return
     end
 
-    self:leaveHeist(playerId, "disconnected")
+    self:leaveHeist(player, "disconnected")
 end
 
 ---@return table
@@ -210,3 +210,5 @@ function HeistManager:getActiveHeistsInfo()
 
     return info
 end
+
+_G.HeistManager = HeistManager
