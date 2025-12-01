@@ -2,7 +2,7 @@
 ---@field id string
 ---@field state string
 ---@field doors? { id: string, location: Vector }[]
----@field vault? { location: Vector }
+---@field vault? { location: Vector, loot: { id: string, location: Vector }[] }
 CurrentHeist = {}
 
 local function handleHeistUpdate(data)

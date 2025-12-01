@@ -58,16 +58,16 @@ Config.Banks = {
             loot = {
                 {
                     entity = "/Game/QBCore/Meshes/SM_ATM.SM_ATM",
-                    location = Vector(1119.21, -688.387, 100.0),
+                    location = Vector(1160.21, -90.0, 0.0),
                     maxUses = 1,
-                    channelingTimeInSeconds = 30,
+                    channelingTimeInSeconds = 5,
                     items = {
                         { id = "cash", amount = math.random(1000, 5000) },
                     }
                 },
                 {
                     entity = "/Game/QBCore/Meshes/SM_ATM.SM_ATM",
-                    location = Vector(1119.21, -688.387, 100.0),
+                    location = Vector(610.0, -90.0, 0.0),
                     maxUses = 1,
                     channelingTimeInSeconds = 5,
                     items = {
