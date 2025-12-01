@@ -96,16 +96,19 @@ function BankHeist:broadcastState()
         payload.vault = {
             location = self.config.vault and self.config.vault.location or nil
         }
+    end
 
-        if self.state == HeistStates.VAULT_OPEN then
-            payload.vault.loot = HELIXTable.map(self.config.vault.loot, function(loot)
+    if self.state == HeistStates.VAULT_OPEN then
+        payload.vault = {
+            location = self.config.vault and self.config.vault.location or nil,
+            loot = HELIXTable.map(self.config.vault.loot, function(loot)
                 return {
                     location = loot.location,
                     maxUses = loot.maxUses,
                     channelingTimeInSeconds = loot.channelingTimeInSeconds
                 }
             end)
-        end
+        }
     end
 
     self:broadcastEvent('HeistUpdate', payload)
@@ -154,6 +157,7 @@ function BankHeist:transitionTo(newState, reason)
     end
 
     self:onStateEnter(newState, oldState)
+    self:broadcastState()
 
     return true
 end

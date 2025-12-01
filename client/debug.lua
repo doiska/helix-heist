@@ -17,7 +17,6 @@ local function getLootAtIndex(index)
 end
 
 local function isVaultOpen()
-    HELIXTable.Dump(CurrentHeist.vault)
     return CurrentHeist and CurrentHeist.state == HeistStates.VAULT_OPEN
 end
 
