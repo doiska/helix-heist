@@ -62,7 +62,14 @@ Explain what runs server-side:
 What is validated?
 
 What can’t trust the client?
-- Any kind of position: loot, vault, doors.
+- The client has no knowledge of where things are until they reach the phase. For example:
+  - Entry: only knows where the door is (could be validated on server, but removes the ability of creating waypoints)
+  - Vault Closed: vault door position
+  - Vault Open: loot position, NOT the loot content. It's only aware of the alarm if it was a LOUD alarm, the silent has no client-side events.
+  - 
 - Minigame results: everything is handled server-side in heist-minigame.lua, the player only makes attempts
+  - The client is aware of the progress, and only what will be displayed on their UI, nothing else.
+  - All minigames uses "attempts" as TriggerCallback, validating only server-side.
+- Loot: during the VAULT_OPEN phase, the player has no knowledge of what the loot items are, only the location.
 - The player has no knowledge if the alarm was fired, unless it's a LOUD alarm, no event is sent.
 - The client is only aware of their heist, no event is dispatched to all players, everything is handled by "broadcastEvent" in heist.lua
