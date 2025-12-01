@@ -190,6 +190,7 @@ function BankHeist:onStateEnter(newState, _oldState)
         if self.config.vault and self.config.vault.openDuration then
             print("Vault will close in " .. self.config.vault.openDuration .. " seconds.")
             self:startTimer("vaultClose", self.config.vault.openDuration, function()
+                print("Vault closed!")
                 self:transitionTo(HeistStates.ESCAPE)
             end)
         end
@@ -197,6 +198,7 @@ function BankHeist:onStateEnter(newState, _oldState)
         if self.config.vault and self.config.vault.policeAutoArriveInSeconds then
             print("Police will arrive in " .. self.config.vault.policeAutoArriveInSeconds .. " seconds.")
             self:startTimer("policeArrival", self.config.vault.policeAutoArriveInSeconds, function()
+                print("Police has arrived.")
                 self:alertPolice(true)
             end)
         end

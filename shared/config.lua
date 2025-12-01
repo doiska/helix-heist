@@ -17,7 +17,7 @@ Config.Persistence = {
 }
 
 ---@type BankCfg
-Config.Banks = {
+Config.Banks = { -- 8 2 3 8
     central = {
         id = "central",
         label = "Central Bank",
@@ -43,9 +43,9 @@ Config.Banks = {
                 silentAlarmDelayInSeconds = 10
             }
         },
-        vault = {
+        vault = {              -- 8 9 5 4
             location = Vector(59.63, 289.30, 91.65),
-            openDuration = 20, -- duration that the vault will stay open
+            openDuration = 40, -- duration that the vault will stay open
             policeAutoArriveInSeconds = 10,
             minigame = {
                 type = "pattern", -- only pattern for now
@@ -69,7 +69,7 @@ Config.Banks = {
             }
         },
         escape = {
-            condition = "radius", -- Can be radius and police
+            condition = "police", -- Can be radius and police
             radius = {
                 distanceFromTheBank = 40,
             },
