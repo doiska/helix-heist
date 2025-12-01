@@ -2,9 +2,24 @@
 -- I know the return logic is redundant, I'm still thinking in a better approach, but this makes the response consistent and easy to handle
 
 local DOOR_INTERACT_RANGE = 300.0
+local LOOT_INTERACT_RANGE = 300.0
 
 local function distanceBetweenVectors(a, b)
     return HELIXMath.VectorDistance(a, b)
+end
+
+local function getPlayerLocation(player)
+    local pawn = GetPlayerPawn(player)
+
+    if not pawn then
+        return nil
+    end
+
+    return GetEntityCoords(pawn)
+end
+
+local function isVaultOpen(heist)
+    return heist.state == HeistStates.VAULT_OPEN
 end
 
 RegisterCallback("CreateHeist", function(player)
@@ -122,8 +137,7 @@ RegisterCallback("StartMinigame", function(player, minigameId)
 
         local doorConfig = HeistDoors.getDoorConfig(heist, minigameId)
 
-        local pawn = GetPlayerPawn(player)
-        local playerLocation = GetEntityCoords(pawn)
+        local playerLocation = getPlayerLocation(player)
 
         if not playerLocation then
             return { status = "error", message = "Unable to find your character" }
@@ -166,4 +180,80 @@ RegisterCallback("SubmitMinigameAttempt", function(player, minigameId, attempt)
     end
 
     return HeistMinigame.validate(heist, player, minigameId, attempt)
+end)
+
+RegisterCallback("StartLootCollection", function(player, lootIndex)
+    local heist = HeistManager:getPlayerHeist(player)
+
+    if not heist then
+        return { status = "error", message = "Not in a heist" }
+    end
+
+    if not isVaultOpen(heist) then
+        return { status = "error", message = "Vault is not open" }
+    end
+
+    local index = tonumber(lootIndex)
+
+    if not index then
+        return { status = "error", message = "Invalid loot index" }
+    end
+
+    local lootConfig = heist.config.vault and heist.config.vault.loot and heist.config.vault.loot[index]
+
+    if not lootConfig then
+        return { status = "error", message = "Loot not found" }
+    end
+
+    local playerLocation = getPlayerLocation(player)
+
+    if not playerLocation then
+        return { status = "error", message = "Unable to find your character" }
+    end
+
+    local distance = distanceBetweenVectors(playerLocation, lootConfig.location)
+
+    if distance > LOOT_INTERACT_RANGE then
+        return { status = "error", message = "Move closer to the loot" }
+    end
+
+    return HeistLoot.start(heist, index, player)
+end)
+
+RegisterCallback("StopLootCollection", function(player, lootIndex)
+    local heist = HeistManager:getPlayerHeist(player)
+
+    if not heist then
+        return { status = "error", message = "Not in a heist" }
+    end
+
+    if not isVaultOpen(heist) then
+        return { status = "error", message = "Vault is not open" }
+    end
+
+    local index = tonumber(lootIndex)
+
+    if not index then
+        return { status = "error", message = "Invalid loot index" }
+    end
+
+    local lootConfig = heist.config.vault and heist.config.vault.loot and heist.config.vault.loot[index]
+
+    if not lootConfig then
+        return { status = "error", message = "Loot not found" }
+    end
+
+    local playerLocation = getPlayerLocation(player)
+
+    if not playerLocation then
+        return { status = "error", message = "Unable to find your character" }
+    end
+
+    local distance = distanceBetweenVectors(playerLocation, lootConfig.location)
+
+    if distance > LOOT_INTERACT_RANGE then
+        return { status = "error", message = "Move closer to the loot" }
+    end
+
+    return HeistLoot.abort(heist, index, player)
 end)

@@ -27,9 +27,14 @@ function HeistMinigame.createMinigame(heist, id, obstacleType, config)
 
     if minigameType == "pattern" then
         answer = {}
+
         for _ = 1, 4 do
             table.insert(answer, math.random(0, 9))
         end
+
+        print("[SERVER] Answer is: ")
+        HELIXTable.Dump(answer)
+
         maxAttempts = config.pattern and config.pattern.maxAttempts or 5
     elseif minigameType == "lockpick" then
         answer = math.random(0, 360)
@@ -120,6 +125,7 @@ function HeistMinigame.validate(heist, playerId, minigameId, attempt)
         end
 
         if minigame.type == "vault" then
+            print("Vault minigame concluded, transition to vault open")
             heist:transitionTo(HeistStates.VAULT_OPEN)
         end
 

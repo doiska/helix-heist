@@ -39,15 +39,8 @@ function BankHeist.new(id, config, playerLeader)
     self.createdAt = os.time()
     self.startedAt = nil
     self.finishedAt = nil
-
-    self.loot = {
-        status = {},
-        playerTotals = {}
-    }
-
     self.minigames = {}
     self.playerProgress = {}
-
     self.metadata = {
         alarmTriggered = false,
         policeNotified = false,
@@ -67,19 +60,9 @@ function BankHeist.new(id, config, playerLeader)
         end
     end
 
-    if config.vault and config.vault.loot then
-        for i, lootConfig in ipairs(config.vault.loot) do
-            self.loot.status[i] = {
-                maxUses = lootConfig.maxUses or 1,
-                uses = 0,
-                amount = math.random(2000, 6000),
-                currentUser = nil
-            }
-        end
-    end
-
     HeistDoors.init(self)
     HeistMinigame.init(self)
+    HeistLoot.init(self)
 
     return self
 end
@@ -134,7 +117,7 @@ function BankHeist:canTransitionTo(newState)
         [HeistStates.PREPARED] = { HeistStates.IDLE, HeistStates.ENTRY, HeistStates.FAILED },
         [HeistStates.ENTRY] = { HeistStates.VAULT_LOCKED, HeistStates.FAILED },
         [HeistStates.VAULT_LOCKED] = { HeistStates.VAULT_OPEN, HeistStates.FAILED },
-        [HeistStates.VAULT_OPEN] = { HeistStates.LOOTING, HeistStates.FAILED },
+        [HeistStates.VAULT_OPEN] = { HeistStates.ESCAPE, HeistStates.FAILED },
         [HeistStates.ESCAPE] = { HeistStates.COMPLETE, HeistStates.FAILED },
     }
 
@@ -201,18 +184,19 @@ function BankHeist:onStateEnter(newState, _oldState)
         self.metadata.vaultOpenTime = os.time()
 
         if self.config.vault and self.config.vault.openDuration then
+            print("Vault will close in " .. self.config.vault.openDuration .. " seconds.")
             self:startTimer("vaultClose", self.config.vault.openDuration, function()
                 self:transitionTo(HeistStates.ESCAPE)
             end)
         end
 
         if self.config.vault and self.config.vault.policeAutoArriveInSeconds then
+            print("Police will arrive in " .. self.config.vault.policeAutoArriveInSeconds .. " seconds.")
             self:startTimer("policeArrival", self.config.vault.policeAutoArriveInSeconds, function()
                 self:alertPolice(true)
             end)
         end
 
-        self:transitionTo(HeistStates.LOOTING)
         return
     end
 
