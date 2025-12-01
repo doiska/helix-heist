@@ -109,13 +109,20 @@ function BankHeist:broadcastState()
         payload.doors = HeistDoors.getClientDoors(self)
     end
 
-    if self.state == HeistStates.VAULT_LOCKED or
-        self.state == HeistStates.VAULT_OPEN or
-        self.state == HeistStates.LOOTING
-    then
+    if self.state == HeistStates.VAULT_LOCKED then
         payload.vault = {
             location = self.config.vault and self.config.vault.location or nil
         }
+
+        if self.state == HeistStates.VAULT_OPEN then
+            payload.vault.loot = HELIXTable.map(self.config.vault.loot, function(loot)
+                return {
+                    location = loot.location,
+                    maxUses = loot.maxUses,
+                    channelingTimeInSeconds = loot.channelingTimeInSeconds
+                }
+            end)
+        end
     end
 
     self:broadcastEvent('HeistUpdate', payload)
@@ -128,7 +135,6 @@ function BankHeist:canTransitionTo(newState)
         [HeistStates.ENTRY] = { HeistStates.VAULT_LOCKED, HeistStates.FAILED },
         [HeistStates.VAULT_LOCKED] = { HeistStates.VAULT_OPEN, HeistStates.FAILED },
         [HeistStates.VAULT_OPEN] = { HeistStates.LOOTING, HeistStates.FAILED },
-        [HeistStates.LOOTING] = { HeistStates.ESCAPE, HeistStates.FAILED },
         [HeistStates.ESCAPE] = { HeistStates.COMPLETE, HeistStates.FAILED },
     }
 
@@ -282,75 +288,6 @@ function BankHeist:removeParticipant(playerId)
     end
 
     -- TODO: dispatch user leaving event
-end
-
----@param lootIndex number
----@param playerId string
-function BankHeist:startLootCollection(lootIndex, playerId)
-    local loot = self.loot.status[lootIndex]
-
-    if not loot or loot.uses >= loot.maxUses then
-        return { status = "error", message = "Loot not available" }
-    end
-
-    if loot.currentUser then
-        return { status = "error", message = "Someone else is collecting" }
-    end
-
-    loot.currentUser = playerId
-
-    local duration = self.config.vault.loot[lootIndex].channelingTimeInSeconds
-
-    local timerId = Timer.SetTimeout(function()
-        self:completeLootCollection(lootIndex, playerId)
-    end, duration * 1000)
-
-    self.lootTimers[lootIndex] = timerId
-
-    return { status = "success", duration = duration }
-end
-
----@param lootIndex number
----@param playerId string
-function BankHeist:abortLootCollection(lootIndex, playerId)
-    local loot = self.loot.status[lootIndex]
-
-    if not loot or loot.currentUser ~= playerId then
-        return { status = "error", message = "Loot not available" }
-    end
-
-    if self.lootTimers[lootIndex] then
-        Timer.ClearTimeout(self.lootTimers[lootIndex])
-        self.lootTimers[lootIndex] = nil
-    end
-
-    loot.currentUser = nil
-    return { status = "success", message = "Loot collection aborted" }
-end
-
----@param lootIndex number
----@param playerId string
-function BankHeist:completeLootCollection(lootIndex, playerId)
-    local loot = self.loot.status[lootIndex]
-
-    if not loot then
-        return false, "Loot no longer exists"
-    end
-
-    if loot.currentUser ~= playerId then
-        return false, "Loot is being collected by another player"
-    end
-
-    -- todo: make it configurable
-    local amount = math.random(1000, 5000)
-
-    loot.uses = loot.uses + 1
-    loot.currentUser = nil
-
-    self.loot.playerTotals[playerId] = (self.loot.playerTotals[playerId] or 0) + amount
-    self.lootTimers[lootIndex] = nil
-
-    return true
 end
 
 function BankHeist:startTimer(name, duration, callback)
