@@ -24,7 +24,6 @@ end
 
 RegisterClientEvent("HeistUpdate", function(data)
     print("Received HeistUpdate")
-    HELIXTable.Dump(data)
     handleHeistUpdate(data)
 end)
 

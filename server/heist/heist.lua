@@ -218,6 +218,7 @@ function BankHeist:onStateEnter(newState, _oldState)
         self:startTimer("escapeDeadline", self.config.escape.police.durationInSeconds, function()
             self:transitionTo(HeistStates.FAILED, "Failed to escape in time")
         end)
+
         return
     end
 

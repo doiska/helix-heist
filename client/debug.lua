@@ -6,7 +6,7 @@ while not DebugCommand do
     Wait(50)
 end
 
-local LOOT_INTERACT_RANGE = 100.0
+local LOOT_INTERACT_RANGE = 500.0
 
 local function getLootAtIndex(index)
     if not CurrentHeist or not CurrentHeist.vault or not CurrentHeist.vault.loot then
@@ -100,6 +100,8 @@ DebugCommand("heist:loot-collect", function(args)
     end
 
     local distance = HELIXMath.VectorDistance(playerLocation, loot.location)
+
+    print("Distance from the loot " .. distance)
 
     if distance > LOOT_INTERACT_RANGE then
         print("Move closer to the loot")

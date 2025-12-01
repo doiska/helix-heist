@@ -45,8 +45,8 @@ Config.Banks = {
         },
         vault = {
             location = Vector(59.63, 289.30, 91.65),
-            openDuration = 3 * 60, -- duration that the vault will stay open
-            policeAutoArriveInSeconds = 3 * 60,
+            openDuration = 20, -- duration that the vault will stay open
+            policeAutoArriveInSeconds = 10,
             minigame = {
                 type = "pattern", -- only pattern for now
                 pattern = {
@@ -56,15 +56,6 @@ Config.Banks = {
                 }
             },
             loot = {
-                {
-                    entity = "/Game/QBCore/Meshes/SM_ATM.SM_ATM",
-                    location = Vector(1160.21, -90.0, 0.0),
-                    maxUses = 1,
-                    channelingTimeInSeconds = 5,
-                    items = {
-                        { id = "cash", amount = math.random(1000, 5000) },
-                    }
-                },
                 {
                     entity = "/Game/QBCore/Meshes/SM_ATM.SM_ATM",
                     location = Vector(610.0, -90.0, 0.0),
@@ -83,7 +74,7 @@ Config.Banks = {
                 distanceFromTheBank = 40,
             },
             police = {
-                durationInSeconds = 45 * 60
+                durationInSeconds = 15
             }
         }
     }

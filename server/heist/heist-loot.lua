@@ -90,5 +90,7 @@ function HeistLoot.complete(heist, lootIndex, playerId)
     heist.loot.playerTotals[playerId] = (heist.loot.playerTotals[playerId] or 0) + amount
     heist.lootTimers[lootIndex] = nil
 
+    print("Loot collected: $" .. amount)
+
     return true
 end

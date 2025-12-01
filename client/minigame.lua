@@ -57,7 +57,6 @@ end)
 
 DebugCommand("heist:door", function()
     if not CurrentHeist or (CurrentHeist.state ~= HeistStates.ENTRY and CurrentHeist.state ~= HeistStates.VAULT_LOCKED) then
-        HELIXTable.Dump(CurrentHeist)
         print("Player is not in a Heist or not in entry/vault_locked states")
         return
     end
@@ -177,8 +176,6 @@ DebugCommand("submitminigame", function(commandArgs)
             print("Error: " .. (result.message or "Unknown"))
             return
         end
-
-        HELIXTable.Dump(result)
 
         local data = result.data
 
