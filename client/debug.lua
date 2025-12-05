@@ -21,23 +21,11 @@ local function isVaultOpen()
 end
 
 DebugCommand("heist:create", function(args)
-    TriggerCallback("CreateHeist", function(result)
-        if result.status == "success" then
-            print("Created and joined heist!")
-        elseif result.status == "error" then
-            print(result.message)
-        end
-    end)
+    TriggerCallback("CreateHeist")
 end)
 
 DebugCommand("heist:start", function()
-    TriggerCallback("StartHeist", function(result)
-        if result.status == "success" then
-            print("Started heist!")
-        elseif result.status == "error" then
-            print(result.message)
-        end
-    end)
+    TriggerCallback("StartHeist")
 end)
 
 DebugCommand("heist:join", function(args)

@@ -9,12 +9,12 @@
 --- @field leader Player
 --- @field timers table
 --- @field lootTimers table
+--- @field minigameTimers table
 --- @field createdAt number
 --- @field startedAt number?
 --- @field finishedAt number?
 --- @field loot { status: { uses: number, maxUses: number, amount: number, currentUser: Player? }, playerTotals: table<Player, number> }
 --- @field minigames table<string, Minigame>
---- @field playerProgress table<Player, table<string, PlayerMinigameProgress>>
 --- @field metadata { alarmTriggered: boolean, policeNotified: boolean, vaultOpenTime: number? }
 --- @field doors table<string, { id: string, config: BankDoor, opened: boolean }>
 BankHeist = {}
@@ -36,11 +36,11 @@ function BankHeist.new(id, config, playerLeader)
     self.leader = playerLeader
     self.timers = {}
     self.lootTimers = {}
+    self.minigameTimers = {}
     self.createdAt = os.time()
     self.startedAt = nil
     self.finishedAt = nil
     self.minigames = {}
-    self.playerProgress = {}
     self.metadata = {
         alarmTriggered = false,
         policeNotified = false,
@@ -76,6 +76,19 @@ function BankHeist:broadcastEvent(event, payload)
         end
 
         TriggerClientEvent(player, event, payload)
+    end
+end
+
+function BankHeist:notify(text)
+    for _, player in ipairs(self.participants) do
+        if not player then
+            print("Player not found.")
+            return
+        end
+
+        -- I'm not sure why the notify export was throwing errors, went with the event instead
+        TriggerClientEvent(player, 'QBCore:Notify', text, 'success')
+        -- exports['qb-core']:Notify(player, text, "success")
     end
 end
 
@@ -181,10 +194,7 @@ function BankHeist:onStateEnter(newState, _oldState)
 
         local delay = self.config.security.alarm.silentAlarmDelayInSeconds or 0
         self:scheduleSilentAlarm(delay)
-        return
-    end
-
-    if newState == HeistStates.VAULT_OPEN then
+    elseif newState == HeistStates.VAULT_OPEN then
         self.metadata.vaultOpenTime = os.time()
 
         if self.config.vault and self.config.vault.openDuration then
@@ -202,11 +212,7 @@ function BankHeist:onStateEnter(newState, _oldState)
                 self:alertPolice(true)
             end)
         end
-
-        return
-    end
-
-    if newState == HeistStates.ESCAPE then
+    elseif newState == HeistStates.ESCAPE then
         self:clearTimer("vaultClose")
 
         if not self.config.escape then
@@ -220,20 +226,12 @@ function BankHeist:onStateEnter(newState, _oldState)
         self:startTimer("escapeDeadline", self.config.escape.police.durationInSeconds, function()
             self:transitionTo(HeistStates.FAILED, "Failed to escape in time")
         end)
-
-        return
-    end
-
-    if newState == HeistStates.COMPLETE then
+    elseif newState == HeistStates.COMPLETE then
         self:distributeRewards()
         self:cleanup()
-        return
-    end
-
-    if newState == HeistStates.FAILED then
+    elseif newState == HeistStates.FAILED then
         print(string.format("[Heist:%s] Failed", self.id))
         self:cleanup()
-        return
     end
 end
 
@@ -261,12 +259,11 @@ function BankHeist:removeParticipant(playerId)
         end
     end
 
-    -- for _, loot in pairs(self.loot.status) do
-    --     -- TODO: should we give the loot to someone else?
-    --     if loot.currentUser == playerId then
-    --         loot.currentUser = nil
-    --     end
-    -- end
+    for _, minigame in pairs(self.minigames) do
+        if minigame.progress.lockedBy == playerId then
+            HeistMinigame.releaseLock(self, minigame, playerId)
+        end
+    end
 
     if #self.participants == 0 then
         self:transitionTo(HeistStates.FAILED, "All participants left")
@@ -277,8 +274,6 @@ function BankHeist:removeParticipant(playerId)
         self.leader = self.participants[1]
         return
     end
-
-    -- TODO: dispatch user leaving event
 end
 
 function BankHeist:startTimer(name, duration, callback)
@@ -313,19 +308,34 @@ function BankHeist:alertPolice(loud)
 
     self.metadata.policeNotified = true
 
-    local notificationData = {
-        id = self.id,
-        location = self.config.vault.location,
-        participantCount = #self.participants,
-        alarmType = loud and "LOUD" or "SILENT",
-        timestamp = os.time()
-    }
+    -- local notificationData = {
+    --     id = self.id,
+    --     location = self.config.vault.location,
+    --     participantCount = #self.participants,
+    --     alarmType = loud and "LOUD" or "SILENT",
+    --     timestamp = os.time()
+    -- }
 
-    -- TODO: notificacao client side
+    -- The QBCore police job doesn't have alerts implemented yet, I'm using the Notify to replace it
+    -- https://github.com/hypersonic-laboratories/qbcore-rp/blob/8a5bb60d34852a3fd6d538e8b1210ac689821d57/qb-policejob/Client/main.lua#L180
+    local policeOfficers = QBCore.Functions.GetPlayersOnDuty("police")
+
+    for _, playerSource in ipairs(policeOfficers) do
+        exports['qb-core']:Player(playerSource, 'Notify', 'Bank ' .. self.id .. ' is being robbed!')
+    end
 end
 
 function BankHeist:distributeRewards()
-    -- TODO: add items/cash to players - equally?
+    local heistTotal = HELIXTable.reduce(self.loot.playerTotals, function(acc, val) return acc + val end, 0)
+    local rewardPerPlayer = math.floor(heistTotal / #self.participants)
+
+    for _, player in ipairs(self.participants) do
+        exports['qb-core']:Player(player, 'AddMoney', 'bank', rewardPerPlayer, 'Heist reward')
+        -- Copied from https://github.com/hypersonic-laboratories/qbcore-rp/blob/8a5bb60d34852a3fd6d538e8b1210ac689821d57/qb-banking/server.lua#L219C9-L219C97
+        -- This syntax doesn't work: QBCore.Functions.AddMoney(player, "bank", rewardPerPlayer)
+    end
+
+    self:notify("Money laundered, your cut is: $" .. rewardPerPlayer)
 end
 
 function BankHeist:cleanup()
@@ -337,6 +347,13 @@ function BankHeist:cleanup()
         if self.lootTimers[lootIndex] then
             Timer.ClearTimeout(self.lootTimers[lootIndex])
             self.lootTimers[lootIndex] = nil
+        end
+    end
+
+    for minigameId, _ in pairs(self.minigameTimers) do
+        if self.minigameTimers[minigameId] then
+            Timer.ClearTimeout(self.minigameTimers[minigameId])
+            self.minigameTimers[minigameId] = nil
         end
     end
 
