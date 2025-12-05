@@ -217,3 +217,14 @@ RegisterClientEvent("HeistDoorOpened", function(data)
 
     print(string.format("[Heist] Door %s opened by %s", data.doorId or "unknown", data.openedBy or "unknown"))
 end)
+
+RegisterClientEvent("HeistMinigameTimeout", function(data)
+    if not data then
+        return
+    end
+
+    if activeMinigame and activeMinigame.id == data.minigameId then
+        activeMinigame = nil
+        print(string.format("[Heist] Minigame timeout! Attempts remaining: %d", data.attemptsRemaining or 0))
+    end
+end)

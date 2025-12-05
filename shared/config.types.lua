@@ -23,9 +23,21 @@
 ---@field timeLimitInSeconds number
 ---@field maxAttempts integer
 
+---@class BankMinigameLockpickConfig
+---@field maxAttempts integer
+---@field timeLimitInSeconds number
+
 ---@class BankMinigameConfig
----@field type string -- "pattern", "lockpick", "drill" -- lua lacks unions :()
+---@field type string -- "pattern", "lockpick", "drill" -- lua lacks unions :(
 ---@field pattern BankMinigamePatternConfig|nil
+---@field lockpick BankMinigameLockpickConfig|nil
+
+---@class MinigameProgress
+---@field attempts any[]
+---@field attemptsCount number
+---@field exhausted boolean
+---@field lockedBy Player?
+---@field lockedAt number?
 
 ---@class Minigame
 ---@field id string
@@ -35,6 +47,8 @@
 ---@field solved boolean
 ---@field solvedBy string?
 ---@field maxAttempts number
+---@field timeLimit number
+---@field progress MinigameProgress
 
 ---@class PlayerMinigameProgress
 ---@field attempts any[]
@@ -61,7 +75,7 @@
 ---@field durationInSeconds number
 
 ---@class BankEscapeConfig
----@field condition string              -- "radius" | "police"
+---@field condition string              -- "radius"
 ---@field radius BankEscapeRadiusConfig|nil
 ---@field police BankEscapePoliceConfig|nil
 

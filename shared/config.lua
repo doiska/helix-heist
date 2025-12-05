@@ -11,7 +11,7 @@ Config.Persistence = {
 }
 
 ---@type BankCfg
-Config.Banks = { -- 8 2 3 8
+Config.Banks = {
     central = {
         id = "central",
         label = "Central Bank",
@@ -27,10 +27,11 @@ Config.Banks = { -- 8 2 3 8
         security = {
             doors = {
                 {
-                    entity = "/Game/HelixDoors/Blueprints/BP_Door_Rotating.BP_Door_Rotating_C",
+                    entity = "/QuietRuntimeEditor/UserContent/StaticMeshes/Primitives/SM_Cube.SM_Cube",
                     lockType = "lockpick",
-                    location = Vector(1119.21, -688.387, 100.0),
-                    rotation = Rotator(0, 0, 0)
+                    location = Vector(-4103.445, 12922.556, -390.0),
+                    rotation = Rotator(0, 0, 0),
+                    scale = Vector(4, 0.8, 2.2)
                 },
             },
             alarm = {
@@ -38,7 +39,7 @@ Config.Banks = { -- 8 2 3 8
                 silentAlarmDelayInSeconds = 10
             }
         },
-        vault = {              -- 8 9 5 4
+        vault = {
             location = Vector(59.63, 289.30, 91.65),
             openDuration = 40, -- duration that the vault will stay open
             policeAutoArriveInSeconds = 10,

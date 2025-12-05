@@ -47,7 +47,7 @@ function HeistManager:getPlayerHeist(player)
     local heistId = self.playerHeists[player]
 
     if not heistId then
-        return
+        return nil
     end
 
     return self.activeHeists[heistId]
@@ -160,6 +160,8 @@ function HeistManager:startHeist(player)
         SetEntityCoords(GetPlayerPawn(participant), heist.config.start.location)
     end
 
+    heist:notify("Heist started, time is ticking!")
+
     return true, "Started!"
 end
 
@@ -208,4 +210,15 @@ function HeistManager:getActiveHeistsInfo()
     return info
 end
 
+---@param heist BankHeist
+function HeistManager:cleanup(heist)
+    HeistDoors.cleanup(heist)
+end
+
 _G.HeistManager = HeistManager
+
+function onShutdown()
+    for _, heist in pairs(HeistManager.activeHeists) do
+        HeistManager:cleanup(heist)
+    end
+end
