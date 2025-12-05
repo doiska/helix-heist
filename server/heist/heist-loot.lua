@@ -81,16 +81,20 @@ function HeistLoot.complete(heist, lootIndex, playerId)
         return false, "Loot is being collected by another player"
     end
 
-    -- todo: make it configurable
-    local amount = math.random(1000, 5000)
-
     loot.uses = loot.uses + 1
     loot.currentUser = nil
 
-    heist.loot.playerTotals[playerId] = (heist.loot.playerTotals[playerId] or 0) + amount
+    heist.loot.playerTotals[playerId] = (heist.loot.playerTotals[playerId] or 0) + loot.amount
     heist.lootTimers[lootIndex] = nil
 
-    print("Loot collected: $" .. amount)
+    print("Loot collected: $" .. loot.amount)
+
+    exports['qb-core']:Notify({
+        type = "success",
+        title = "Loot Collected",
+        text = "You have successfully collected $" .. loot.amount,
+        duration = 5000
+    })
 
     return true
 end
