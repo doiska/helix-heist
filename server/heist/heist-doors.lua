@@ -5,11 +5,18 @@ function HeistDoors.init(heist)
 
     if heist.config.security and heist.config.security.doors then
         for i, door in ipairs(heist.config.security.doors) do
+            --
+            -- StaticMesh(PawnCoords, Rotator(), Config.Prop.Mesh)
+            local doorMesh = StaticMesh(door.location, door.rotation, door.entity)
+            doorMesh:SetActorScale3D(door.scale or Vector(1, 1, 1))
+
             local doorId = "door_" .. i
+
             heist.doors[doorId] = {
                 config = door,
                 opened = false,
-                openedBy = nil
+                openedBy = nil,
+                mesh = doorMesh
             }
         end
     end
@@ -19,7 +26,7 @@ function HeistDoors.getDoorConfig(heist, doorId)
     local door = heist.doors and heist.doors[doorId]
 
     if not door then
-        return
+        return nil
     end
 
     return door.config
@@ -96,5 +103,11 @@ function HeistDoors.areAllDoorsBypassed(heist)
 end
 
 function HeistDoors.cleanup(heist)
+    for _, door in pairs(heist.doors) do
+        if door.mesh and door.mesh:IsValid() then
+            DeleteEntity(door.mesh)
+        end
+    end
+
     heist.doors = {}
 end
