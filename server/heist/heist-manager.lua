@@ -3,8 +3,6 @@
 ---@field playerHeists table<string, string>
 ---@field playersInCooldown table<string, number>
 HeistManager = {
-    -- TODO: not completely sure if we should aim for a single source of truth (only a single heist array) or
-    -- 1 array for heists and 1 array for players in heists and focusing in O(1) for our lookup functions (isPlayerInHeist for exmaple)
     activeHeists = {},
     playerHeists = {},
     playersInCooldown = {}
@@ -49,7 +47,7 @@ function HeistManager:getPlayerHeist(player)
     local heistId = self.playerHeists[player]
 
     if not heistId then
-        return nil
+        return
     end
 
     return self.activeHeists[heistId]
@@ -138,28 +136,33 @@ function HeistManager:startHeist(player)
         return false, "The Heist is not at preparing state, it is currently in state " .. heist.state
     end
 
-    for index, value in ipairs(heist.participants) do
+    for _, participant in ipairs(heist.participants) do
         for _, requiredItem in ipairs(heist.config.start.requiredItems) do
-            local mockInventoryCount = math.random(1, 10)
-            local hasItem = mockInventoryCount >= requiredItem.amount
+            local itemCount = exports['qb-inventory']:GetItemCount(participant, requiredItem.id)
 
-            -- todo: we could sum total items instead of requiring all users to have all items
+            if not itemCount then
+                return false, "Something went wrong, item count was nil"
+            end
+
+            local hasItem = itemCount >= requiredItem.amount
 
             if not hasItem then
-                return false, "Not all participants have necessary items"
+                local playerName = exports['qb-core']:GetPlayer(participant).PlayerData.charinfo.firstname
+                return false, "Player " .. playerName .. " does not have enough " .. requiredItem.id
             end
         end
     end
 
     heist:transitionTo(HeistStates.ENTRY)
-
-    --todo: teleport players to the heist entrace or mark on their map
     heist:broadcastState()
+
+    for _, participant in ipairs(heist.participants) do
+        SetEntityCoords(GetPlayerPawn(participant), heist.config.start.location)
+    end
 
     return true, "Started!"
 end
 
--- TODO: add the option to the leader to delete the heist?
 ---@param heistId string
 function HeistManager:removeHeist(heistId)
     local heist = self.activeHeists[heistId]
@@ -175,22 +178,16 @@ function HeistManager:removeHeist(heistId)
     end
 
     heist:cleanup()
-
-    -- TODO: change the event to something else, we shouldn't need a event only for deletion, might be better to handle like a game state change (aka failed)
-    heist:broadcastEvent("HeistDeleted")
     self.activeHeists[heistId] = nil
 end
 
+---@param player Player
 function HeistManager:getPlayerHeistById(player)
     return self.playerHeists[player]
 end
 
 ---@param player Player
 function HeistManager:handlePlayerDisconnect(player)
-    if not self:isPlayerInHeist(playerId) then
-        return
-    end
-
     self:leaveHeist(player, "disconnected")
 end
 

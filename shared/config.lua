@@ -7,13 +7,7 @@ Config.Debug = {
 }
 
 Config.Persistence = {
-    type = "json",
-    json = {
-        file = "heist.json"
-    },
-    database = {
-
-    }
+    database = {}
 }
 
 ---@type BankCfg
@@ -27,7 +21,8 @@ Config.Banks = { -- 8 2 3 8
             requiredItems = {
                 { id = "lockpick", amount = 5 },
                 { id = "laptop",   amount = 1 }
-            }
+            },
+            location = Vector(-1396.9, 14074.70, -315.84)
         },
         security = {
             doors = {

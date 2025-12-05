@@ -50,3 +50,5 @@ end
 ---@param event string
 ---@param ... any
 function TriggerCallback(event, ...) end
+
+exports = {}

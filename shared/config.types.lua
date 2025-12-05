@@ -2,6 +2,7 @@
 ---@field minPlayers integer
 ---@field minPoliceOfficers integer
 ---@field requiredItems table{ id: string, amount: integer }[]
+---@field location Vector
 
 ---@class BankDoor
 ---@field entity string
