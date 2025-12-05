@@ -63,6 +63,7 @@ DebugCommand("heist:door", function()
 
     if not CurrentHeist.doors and not CurrentHeist.vault then
         print("No access to current doors")
+        return
     end
 
     local door = findClosestDoor(CurrentHeist.doors)
