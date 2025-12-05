@@ -118,13 +118,19 @@ RegisterCallback("StartMinigame", function(player, minigameId)
         return { status = "error", message = "Minigame not found" }
     end
 
-    local progress = heist.playerProgress[player] and heist.playerProgress[player][minigameId]
-    local attemptsUsed = progress and progress.attemptsCount or 0
-    local attemptsRemaining = math.max(0, minigame.maxAttempts - attemptsUsed)
 
-    if progress and progress.completed then
-        return { status = "error", message = "No attempts remaining" }
+    if minigame.progress.exhausted then
+        return { status = "error", message = "All attempts have been exhausted" }
     end
+
+    local lockAcquired, lockError = HeistMinigame.acquireLock(heist, minigame, player)
+
+    if not lockAcquired then
+        return { status = "error", message = lockError }
+    end
+
+    local progress = minigame.progress
+    local attemptsRemaining = math.max(0, minigame.maxAttempts - progress.attemptsCount)
 
     if minigame.type == "door" then
         if HeistDoors.isDoorBypassed(heist, minigameId) then
@@ -167,7 +173,8 @@ RegisterCallback("StartMinigame", function(player, minigameId)
             type = minigame.type,
             minigameType = minigame.minigameType,
             maxAttempts = minigame.maxAttempts,
-            attemptsRemaining = attemptsRemaining
+            attemptsRemaining = attemptsRemaining,
+            timeLimit = minigame.timeLimit
         }
     }
 end)

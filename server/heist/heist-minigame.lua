@@ -24,6 +24,7 @@ function HeistMinigame.createMinigame(heist, id, obstacleType, config)
     local minigameType = config.type
     local answer = nil
     local maxAttempts = 5
+    local timeLimit = 0
 
     if minigameType == "pattern" then
         answer = {}
@@ -32,13 +33,12 @@ function HeistMinigame.createMinigame(heist, id, obstacleType, config)
             table.insert(answer, math.random(0, 9))
         end
 
-        print("[SERVER] Answer is: ")
-        HELIXTable.Dump(answer)
-
         maxAttempts = config.pattern and config.pattern.maxAttempts or 5
+        timeLimit = config.pattern and config.pattern.timeLimitInSeconds or 60
     elseif minigameType == "lockpick" then
         answer = math.random(0, 360)
         maxAttempts = config.lockpick and config.lockpick.maxAttempts or 3
+        timeLimit = config.lockpick and config.lockpick.timeLimitInSeconds or 30
     end
 
     heist.minigames[id] = {
@@ -48,10 +48,109 @@ function HeistMinigame.createMinigame(heist, id, obstacleType, config)
         answer = answer,
         solved = false,
         solvedBy = nil,
-        maxAttempts = maxAttempts
+        maxAttempts = maxAttempts,
+        timeLimit = timeLimit,
+        progress = {
+            attempts = {},
+            attemptsCount = 0,
+            exhausted = false,
+            lockedBy = nil,
+            lockedAt = nil
+        }
     }
 
-    print(string.format("[Heist:%s] Minigame %s created (type:%s)", heist.id, id, minigameType))
+    print(string.format("[Heist:%s] Minigame %s created (type:%s, timeLimit:%ds)", heist.id, id, minigameType, timeLimit))
+end
+
+---@param heist BankHeist
+---@param minigame Minigame
+---@param playerId Player
+---@return boolean, string?
+function HeistMinigame.acquireLock(heist, minigame, playerId)
+    if minigame.progress.lockedBy ~= nil and minigame.progress.lockedBy ~= playerId then
+        return false, "Another player is using this minigame"
+    end
+
+    minigame.progress.lockedBy = playerId
+    minigame.progress.lockedAt = os.time()
+
+    if minigame.timeLimit > 0 then
+        HeistMinigame.startLockTimer(heist, minigame)
+    end
+
+    return true, nil
+end
+
+---@param heist BankHeist
+---@param minigame Minigame
+---@param playerId Player?
+function HeistMinigame.releaseLock(heist, minigame, playerId)
+    if playerId and minigame.progress.lockedBy ~= playerId then
+        return
+    end
+
+    HeistMinigame.clearLockTimer(heist, minigame.id)
+
+    minigame.progress.lockedBy = nil
+    minigame.progress.lockedAt = nil
+end
+
+---@param heist BankHeist
+---@param minigame Minigame
+function HeistMinigame.startLockTimer(heist, minigame)
+    local timerId = Timer.SetTimeout(function()
+        HeistMinigame.handleLockTimeout(heist, minigame.id)
+    end, minigame.timeLimit * 1000)
+
+    heist.minigameTimers[minigame.id] = timerId
+end
+
+---@param heist BankHeist
+---@param minigameId string
+function HeistMinigame.clearLockTimer(heist, minigameId)
+    if not heist.minigameTimers[minigameId] then
+        return
+    end
+
+    Timer.ClearTimeout(heist.minigameTimers[minigameId])
+    heist.minigameTimers[minigameId] = nil
+end
+
+---@param heist BankHeist
+---@param minigameId string
+function HeistMinigame.handleLockTimeout(heist, minigameId)
+    local minigame = heist.minigames[minigameId]
+
+    if not minigame or not minigame.progress.lockedBy then
+        return
+    end
+
+    local playerId = minigame.progress.lockedBy
+
+    minigame.progress.attemptsCount = minigame.progress.attemptsCount + 1
+    table.insert(minigame.progress.attempts, {
+        attempt = "timeout",
+        result = { status = "timeout", message = "Time expired" }
+    })
+
+    if minigame.progress.attemptsCount >= minigame.maxAttempts then
+        minigame.progress.exhausted = true
+    end
+
+    minigame.progress.lockedBy = nil
+    minigame.progress.lockedAt = nil
+    heist.minigameTimers[minigameId] = nil
+
+    heist:broadcastEvent("HeistMinigameTimeout", {
+        heistId = heist.id,
+        minigameId = minigameId,
+        playerId = playerId,
+        attemptsRemaining = minigame.maxAttempts - minigame.progress.attemptsCount,
+        exhausted = minigame.progress.exhausted
+    })
+
+    print(string.format("[Heist:%s] Minigame %s timeout for player %s (remaining:%d)",
+        heist.id, minigameId, playerId, minigame.maxAttempts - minigame.progress.attemptsCount))
 end
 
 function HeistMinigame.validate(heist, playerId, minigameId, attempt)
@@ -73,22 +172,14 @@ function HeistMinigame.validate(heist, playerId, minigameId, attempt)
         return { status = "error", message = "Already solved by " .. minigame.solvedBy }
     end
 
-    if not heist.playerProgress[playerId] then
-        heist.playerProgress[playerId] = {}
+    local progress = minigame.progress
+
+    if progress.lockedBy ~= playerId then
+        return { status = "error", message = "You do not have access to this minigame" }
     end
 
-    if not heist.playerProgress[playerId][minigameId] then
-        heist.playerProgress[playerId][minigameId] = {
-            attempts = {},
-            attemptsCount = 0,
-            completed = false
-        }
-    end
-
-    local progress = heist.playerProgress[playerId][minigameId]
-
-    if progress.completed then
-        return { status = "error", message = "You already completed this" }
+    if progress.exhausted then
+        return { status = "error", message = "All attempts have been exhausted" }
     end
 
     local result = nil
@@ -118,7 +209,8 @@ function HeistMinigame.validate(heist, playerId, minigameId, attempt)
     if result.data.solved then
         minigame.solved = true
         minigame.solvedBy = playerId
-        progress.completed = true
+
+        HeistMinigame.releaseLock(heist, minigame, playerId)
 
         if minigame.type == "door" then
             HeistDoors.markDoorBypassed(heist, minigameId, playerId)
@@ -144,7 +236,9 @@ function HeistMinigame.validate(heist, playerId, minigameId, attempt)
     local attemptsRemaining = minigame.maxAttempts - progress.attemptsCount
 
     if attemptsRemaining <= 0 then
-        progress.completed = true
+        progress.exhausted = true
+
+        HeistMinigame.releaseLock(heist, minigame, playerId)
 
         -- TODO: break the lockpick or remove the item
 
@@ -153,7 +247,8 @@ function HeistMinigame.validate(heist, playerId, minigameId, attempt)
             data = {
                 solved = false,
                 complete = true,
-                message = "Max attempts exceeded",
+                exhausted = true,
+                message = "All attempts exhausted",
                 progress = result.data,
                 attemptsRemaining = 0
             }
