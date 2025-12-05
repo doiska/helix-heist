@@ -12,7 +12,7 @@ local function getPlayerLocation(player)
     local pawn = GetPlayerPawn(player)
 
     if not pawn then
-        return nil
+        return
     end
 
     return GetEntityCoords(pawn)

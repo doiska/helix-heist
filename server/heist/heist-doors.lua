@@ -1,6 +1,3 @@
--- I'll refactor at some point to be a class that receives Heist as argument, making cleanup easier
--- the current approach is fine tho
-
 HeistDoors = {}
 
 function HeistDoors.init(heist)
@@ -22,7 +19,7 @@ function HeistDoors.getDoorConfig(heist, doorId)
     local door = heist.doors and heist.doors[doorId]
 
     if not door then
-        return nil
+        return
     end
 
     return door.config
