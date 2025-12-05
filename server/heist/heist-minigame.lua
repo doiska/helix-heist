@@ -98,7 +98,7 @@ function HeistMinigame.validate(heist, playerId, minigameId, attempt)
     elseif minigame.minigameType == "lockpick" then
         result = HeistMinigame.validateLockpick(minigame.answer, attempt)
     else
-        print("Invalid minigame: " .. minigame)
+        print("Invalid minigame: " .. minigameId)
         return {
             status = "error",
             message = "Invalid minigame"
