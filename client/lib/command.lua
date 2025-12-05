@@ -3,7 +3,6 @@ if not Config.Debug then
 end
 
 local Console = GetActorByTag('HConsole')
-local commands = {}
 
 -- this is a hack to normalize the args, I'm not sure why the args are being treated as table or single arg sometimes
 local function normalizeArgs(...)
@@ -52,11 +51,4 @@ function DebugCommand(name, cb)
             cb(normalizeArgs(...))
         end
     })
-end
-
-function onShutdown()
-    for _, command in ipairs(commands) do
-        local commandInstance = Console:FindCommand(command)
-        Console:UnregisterCommand(commandInstance)
-    end
 end
