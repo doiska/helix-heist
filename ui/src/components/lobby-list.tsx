@@ -1,23 +1,23 @@
-import { useUIMutation } from "../hooks/utils/use-client-mutation";
-import { useClientQuery } from "../hooks/utils/use-client-query";
+import { useState } from "preact/hooks";
+import { useUIEvent } from "../hooks/use-ui-event";
 import { type HeistLobby as HeistLobbyType } from "../types/heist";
+import { fetchHelix } from "../lib/fetch-helix";
 
-export function LobbyList({ onStateUpdate }: { onStateUpdate: () => void }) {
-  const { mutate, status } = useUIMutation();
+export function LobbyList() {
+  const [heistLobbies, setHeistLobbies] = useState<HeistLobbyType[]>([]);
 
-  const { data: heistLobbies = [] } = useClientQuery<HeistLobbyType[]>({
-    event: "GetActiveHeistInfo",
-    queryKey: ["heist", "lobbies"],
+  useUIEvent<HeistLobbyType[]>("GetActiveHeistInfo", (result) => {
+    if (result.status === "success") {
+      setHeistLobbies(result.data);
+    }
   });
 
   const handleCreateHeist = async () => {
-    await mutate("CreateHeist");
-    onStateUpdate();
+    await fetchHelix("CreateHeist");
   };
 
   const handleJoinHeist = async (heistId: string) => {
-    await mutate("JoinHeist", heistId);
-    onStateUpdate();
+    await fetchHelix("JoinHeist", heistId);
   };
 
   return (
@@ -27,7 +27,6 @@ export function LobbyList({ onStateUpdate }: { onStateUpdate: () => void }) {
           Available Operations ({heistLobbies.length})
         </div>
         <button
-          disabled={status === "loading"}
           onClick={handleCreateHeist}
           className="inline-flex items-center justify-center text-white bg-emerald-600 shadow rounded"
         >

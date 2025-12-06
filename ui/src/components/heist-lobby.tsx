@@ -1,16 +1,20 @@
-import { useClientQuery } from "../hooks/utils/use-client-query";
+import { useState } from "preact/hooks";
 import { type UserHeistState } from "../types/heist";
 import { LobbyList } from "./lobby-list";
 import { LobbyRoom } from "./lobby-room";
+import { useUIEvent } from "../hooks/use-ui-event";
 
 interface HeistLobbyProps {
   onBack?: () => void;
 }
 
 export function HeistLobby({ onBack }: HeistLobbyProps) {
-  const { data: userHeistState, refetch } = useClientQuery<UserHeistState>({
-    event: "GetUserHeistState",
-    queryKey: ["heist", "user"],
+  const [userHeistState, setHeistState] = useState<UserHeistState>();
+
+  useUIEvent<UserHeistState>("UpdateUserHeistState", (result) => {
+    if (result.status === "success") {
+      setHeistState(result.data);
+    }
   });
 
   return (
@@ -31,11 +35,7 @@ export function HeistLobby({ onBack }: HeistLobbyProps) {
         </div>
 
         <div className="flex-1 overflow-y-auto px-8 py-6">
-          {userHeistState?.inHeist ? (
-            <LobbyRoom onStateUpdate={() => refetch()} />
-          ) : (
-            <LobbyList onStateUpdate={() => refetch()} />
-          )}
+          {userHeistState?.inHeist ? <LobbyRoom /> : <LobbyList />}
         </div>
       </div>
     </div>

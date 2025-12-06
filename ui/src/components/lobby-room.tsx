@@ -1,61 +1,34 @@
 import { LogOut, Users } from "lucide-preact";
-import { useClientQuery } from "../hooks/utils/use-client-query";
-import { useUIMutation } from "../hooks/utils/use-client-mutation";
-import { useUIEvent } from "../hooks/utils/use-client-event";
-import { useQueryCache } from "../hooks/utils/query-cache";
 import {
   type HeistLobby as HeistLobbyType,
   type UserHeistState,
 } from "../types/heist";
+import { useUIEvent } from "../hooks/use-ui-event";
+import { useState } from "preact/hooks";
+import { fetchHelix } from "../lib/fetch-helix";
 
-export function LobbyRoom({ onStateUpdate }: { onStateUpdate: () => void }) {
-  const queryCache = useQueryCache();
+export function LobbyRoom() {
+  const [userHeistState, setHeistState] = useState<UserHeistState>();
+  const [heistLobbies, setHeistLobbies] = useState<HeistLobbyType[]>([]);
 
-  const { data: userHeistState, refetch } = useClientQuery<UserHeistState>({
-    event: "GetUserHeistState",
-    queryKey: ["heist", "user"],
+  useUIEvent<UserHeistState>("GetUserHeistState", (result) => {
+    if (result.status === "success") {
+      setHeistState(result.data);
+    }
   });
 
-  const { data: heistLobbies = [] } = useClientQuery<HeistLobbyType[]>({
-    event: "GetActiveHeistInfo",
-    queryKey: ["heist", "lobbies"],
+  useUIEvent<HeistLobbyType[]>("GetActiveHeistInfo", (result) => {
+    if (result.status === "success") {
+      setHeistLobbies(result.data);
+    }
   });
 
   const currentHeist = userHeistState?.heistId
     ? heistLobbies.find((h) => h.id === userHeistState.heistId)
     : undefined;
 
-  const { mutate: leaveHeistMutation } = useUIMutation();
-
-  useUIEvent("HeistUpdate", (data: any) => {
-    if (data.deleted) {
-      queryCache.setQueryData<UserHeistState>(["heist", "user"], {
-        inHeist: false,
-        heistId: null,
-      });
-      return;
-    }
-
-    queryCache.setQueryData<HeistLobbyType[]>(
-      ["heist", "lobbies"],
-      (old = []) =>
-        old.map((h) =>
-          h.id === data.heistId
-            ? {
-                id: data.heistId,
-                state: data.state,
-                participants: data.participants.length,
-                leader: data.leader,
-                canJoin: data.canJoin,
-              }
-            : h,
-        ),
-    );
-  });
-
   const handleLeaveHeist = async () => {
-    await leaveHeistMutation("LeaveHeist", undefined);
-    onStateUpdate();
+    await fetchHelix("LeaveHeist");
   };
 
   if (!currentHeist) {
