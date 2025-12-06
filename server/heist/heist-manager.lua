@@ -187,11 +187,17 @@ function HeistManager:getActiveHeistsInfo()
     local info = {}
 
     for heistId, heist in pairs(self.activeHeists) do
+        local participants = HELIXTable.map(heist.participants, function(participant)
+            return exports['qb-core']:GetPlayerName(participant)
+        end)
+
+        local leaderName = exports['qb-core']:GetPlayerName(heist.leader)
+
         table.insert(info, {
             id = heistId,
             state = heist.state,
-            participants = heist.participants,
-            leader = heist.leader,
+            participants = participants,
+            leader = leaderName,
             canJoin = heist.state == HeistStates.IDLE or heist.state == HeistStates.PREPARED
         })
     end
