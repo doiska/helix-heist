@@ -15,16 +15,16 @@ export function LobbyList({
   lobbies: LobbyState[];
 }) {
   const handleCreateHeist = async () => {
-    await fetchHelix("CreateHeist");
+    await fetchHelix("ui.CreateHeist");
   };
 
   const handleJoinHeist = async (heistId: string) => {
-    await fetchHelix("JoinHeist", heistId);
+    await fetchHelix("ui.JoinHeist", heistId);
   };
 
   return (
-    <div className="fixed flex inset-0 items-center justify-center bg-neutral-900/80">
-      <div class="min-w-[80vh] min-h-[80vh] bg-neutral-900 p-4">
+    <div className="absolute inset-0 flex flex-col items-center justify-center">
+      <div className="min-w-[60vw] min-h-[60vh] bg-neutral-900 p-4">
         <div className="flex items-center justify-between mb-4">
           <div className="text-zinc-300 text-xs uppercase tracking-wide font-bold">
             Available Operations ({heistLobbies.length})
@@ -67,7 +67,7 @@ export function LobbyList({
                         Crew
                       </div>
                       <div className="text-white font-bold">
-                        {heist.participants}
+                        {heist.participants.join(", ")}
                       </div>
                     </div>
                     <div className="text-center">
