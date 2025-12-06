@@ -30,12 +30,8 @@ local function findClosestDoor(doors)
     return closest
 end
 
-DebugCommand("startminigame", function(args)
-    local minigameId = args[1]
-
-    if not minigameId then
-        print("/startminigame <id>")
-        print("vault_door, door_1, door_2")
+RegisterClientEvent("client.StartMinigame", function(data)
+    if not data.doorId then
         return
     end
 
@@ -52,82 +48,9 @@ DebugCommand("startminigame", function(args)
         elseif result.data.minigameType == "lockpick" then
             print("Use: /submitminigame door_1 180")
         end
-    end)
-end)
 
-DebugCommand("heist:door", function()
-    if not CurrentHeist or (CurrentHeist.state ~= HeistStates.ENTRY and CurrentHeist.state ~= HeistStates.VAULT_LOCKED) then
-        print("Player is not in a Heist or not in entry/vault_locked states")
-        return
-    end
-
-    if not CurrentHeist.doors and not CurrentHeist.vault then
-        print("No access to current doors")
-        return
-    end
-
-    local door = findClosestDoor(CurrentHeist.doors)
-
-    if not door then
-        print("No bank door nearby")
-        return
-    end
-
-    TriggerCallback("StartMinigame", function(result)
-        if result.status ~= "success" then
-            print("Error: " .. (result.message or "Unknown"))
-            return
-        end
-
-        activeMinigame = result.data
-
-        if result.data.minigameType == "lockpick" then
-            print(string.format("Lockpick %s (Attempts left: %d) /submitminigame %s <angle>", door.id,
-                result.data.attemptsRemaining, door.id))
-        else
-            print(string.format("Minigame %s ready (Attempts left: %d)", door.id, result.data.attemptsRemaining))
-        end
-    end, door.id)
-end)
-
-DebugCommand("heist:vault", function()
-    if not CurrentHeist or CurrentHeist.state ~= HeistStates.VAULT_LOCKED then
-        print("Player is not in a Heist or vault is not locked")
-        return
-    end
-
-    if not CurrentHeist.vault or not CurrentHeist.vault.location then
-        print("No access to current vault")
-        return
-    end
-
-    local vault = findClosestDoor({
-        {
-            id = "vault_door",
-            location = CurrentHeist.vault.location
-        }
-    })
-
-    if not vault then
-        print("No bank vault nearby")
-        return
-    end
-
-    TriggerCallback("StartMinigame", function(result)
-        if result.status ~= "success" then
-            print("Error: " .. (result.message or "Unknown"))
-            return
-        end
-
-        activeMinigame = result.data
-
-        if result.data.minigameType == "lockpick" then
-            print(string.format("Lockpick %s (Attempts left: %d) /submitminigame %s <angle>", vault.id,
-                result.data.attemptsRemaining, vault.id))
-        else
-            print(string.format("Minigame %s ready (Attempts left: %d)", vault.id, result.data.attemptsRemaining))
-        end
-    end, vault.id)
+        -- todo: show ui
+    end, data.doorId)
 end)
 
 DebugCommand("submitminigame", function(commandArgs)
