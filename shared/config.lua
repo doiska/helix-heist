@@ -31,7 +31,12 @@ Config.Banks = {
                     lockType = "lockpick",
                     location = Vector(-4103.445, 12922.556, -390.0),
                     rotation = Rotator(0, 0, 0),
-                    scale = Vector(4, 0.8, 2.2)
+                    scale = Vector(4, 0.8, 2.2),
+                    interact = {
+                        Text = "Open Garage",
+                        SubText = "Press E to start lockpicking",
+                        Input = '/Game/Input/Actions/IA_Interact.IA_Interact',
+                    }
                 },
             },
             alarm = {
@@ -44,7 +49,7 @@ Config.Banks = {
             openDuration = 40, -- duration that the vault will stay open
             policeAutoArriveInSeconds = 10,
             minigame = {
-                type = "pattern", -- only pattern for now
+                type = "pattern",
                 pattern = {
                     sequenceLength = 5,
                     timeLimitInSeconds = 30,
