@@ -244,7 +244,8 @@ function HeistMinigame.validate(heist, playerId, minigameId, attempt)
 
         HeistMinigame.releaseLock(heist, minigame, playerId)
 
-        -- TODO: break the lockpick or remove the item
+        heist:notify("Failed to crack the door, heist is over.", "error")
+        HeistManager:removeHeist(heist.id)
 
         return {
             status = "success",
@@ -327,8 +328,7 @@ end
 function HeistMinigame.validateLockpick(answer, guess)
     local diff = math.abs(answer - guess)
 
-    -- i added a tolerance because would be really annoying to guess the perfect position
-    local tolerance = 40 -- was 10, increased to 40 only for testing
+    local tolerance = 20
 
     return {
         status = "success",
