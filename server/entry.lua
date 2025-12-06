@@ -1,1 +1,0 @@
-print("Starting Heist script")
