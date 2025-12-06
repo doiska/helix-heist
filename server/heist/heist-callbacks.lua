@@ -87,7 +87,7 @@ RegisterCallback("StartHeist", function(player, ...)
     end
 end)
 
-RegisterCallback("GetActiveHeistInfo", function()
+RegisterCallback("GetActiveHeistsInfo", function()
     return {
         status = "success",
         data = HeistManager:getActiveHeistsInfo()
