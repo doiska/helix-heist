@@ -90,7 +90,9 @@ end)
 RegisterCallback("GetActiveHeistsInfo", function()
     return {
         status = "success",
-        data = HeistManager:getActiveHeistsInfo()
+        data = {
+            lobbies = HeistManager:getActiveHeistsInfo(),
+        }
     }
 end)
 

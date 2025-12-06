@@ -7,10 +7,13 @@
 ---
 ---@type ClientHeist | nil
 local CurrentHeist = nil
+
+-- Break this into a table with functions like HeistUI.ShowLobby and handle indexes, etc
 local HeistUI = WebUI("heist-ui", "heist/ui/dist/index.html", 0)
 
 HeistUI.Browser.OnLoadCompleted:Add(HeistUI.Browser, function()
     HeistUI:SendEvent('Loaded')
+    BindHeistUIEvents()
 end)
 
 RegisterClientEvent("HeistUpdate", function(newHeistState)
