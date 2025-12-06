@@ -2,8 +2,9 @@ if not Config.Debug.enabled then
     return
 end
 
-while not DebugCommand do
-    Timer.Wait(100)
+-- Not sure if there's a better approach for this, like wrapping in a registerCommands() fn, load order or something else.
+if not DebugCommand then
+    Timer.Wait(1000)
 end
 
 local LOOT_INTERACT_RANGE = 500.0
@@ -20,12 +21,19 @@ local function isVaultOpen()
     return CurrentHeist and CurrentHeist.state == HeistStates.VAULT_OPEN
 end
 
-DebugCommand("heist:create", function(args)
-    TriggerCallback("CreateHeist")
-end)
+DebugCommand("heist", function()
+    TriggerCallback("GetActiveHeistsInfo", function(lobby)
+        if not lobby or not lobby.status then
+            print("Something went wrong.")
+            return
+        end
 
-DebugCommand("heist:start", function()
-    TriggerCallback("StartHeist")
+        if lobby.status == 'error' then
+            print(lobby.message or "Response returned but no content.")
+        end
+
+        HeistUI:SendEvent("ShowLobby", lobby)
+    end)
 end)
 
 DebugCommand("heist:join", function(args)
