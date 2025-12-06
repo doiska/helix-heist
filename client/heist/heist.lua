@@ -1,14 +1,14 @@
 ---@class ClientHeist
 ---@field id string
 ---@field state string
+---@field loot table
 ---@field doors? { id: string, location: Vector }[]
 ---@field vault? { location: Vector, loot: { id: string, location: Vector }[] }
 CurrentHeist = {}
 
-local function handleHeistUpdate(data)
+RegisterClientEvent("HeistUpdate", function(data)
     if not data or data.state == "CLEANUP" then
         CurrentHeist = nil
-        print("Cleaned up client-side Heist state")
         return
     end
 
@@ -19,12 +19,21 @@ local function handleHeistUpdate(data)
         vault = data.vault
     }
 
-    HELIXTable.Dump(CurrentHeist)
-end
-
-RegisterClientEvent("HeistUpdate", function(data)
-    print("Received HeistUpdate")
-    handleHeistUpdate(data)
+    if CurrentHeist.state == HeistStates.ENTRY and CurrentHeist.doors then
+        for _, door in pairs(CurrentHeist.doors) do
+            exports['qb-target']:AddTargetEntity(door.actor.Object, {
+                distance = 5000,
+                options = {
+                    {
+                        label = "Start lockpick",
+                        icon = "fas fa-lock",
+                        event = "client.StartMinigame",
+                        doorId = door.id
+                    },
+                }
+            })
+        end
+    end
 end)
 
 _G.CurrentHeist = CurrentHeist

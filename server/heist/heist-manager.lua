@@ -154,7 +154,6 @@ function HeistManager:startHeist(player)
     end
 
     heist:transitionTo(HeistStates.ENTRY)
-    heist:broadcastState()
 
     for _, participant in ipairs(heist.participants) do
         SetEntityCoords(GetPlayerPawn(participant), heist.config.start.location)
