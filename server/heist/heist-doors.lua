@@ -5,18 +5,17 @@ function HeistDoors.init(heist)
 
     if heist.config.security and heist.config.security.doors then
         for i, door in ipairs(heist.config.security.doors) do
-            --
-            -- StaticMesh(PawnCoords, Rotator(), Config.Prop.Mesh)
-            local doorMesh = StaticMesh(door.location, door.rotation, door.entity)
-            doorMesh:SetActorScale3D(door.scale or Vector(1, 1, 1))
+            local doorActor = StaticMesh(door.location, door.rotation, door.entity)
+            doorActor:SetActorScale3D(door.scale or Vector(1, 1, 1))
 
             local doorId = "door_" .. i
 
             heist.doors[doorId] = {
+                id = doorId,
                 config = door,
                 opened = false,
                 openedBy = nil,
-                mesh = doorMesh
+                actor = doorActor
             }
         end
     end
@@ -40,17 +39,8 @@ function HeistDoors.getTotalDoors(heist)
     return #heist.config.security.doors
 end
 
-function HeistDoors.getClientDoors(heist)
-    local clientDoors = {}
-
-    for id, door in pairs(heist.doors or {}) do
-        table.insert(clientDoors, {
-            id = id,
-            location = door.config.location
-        })
-    end
-
-    return clientDoors
+function HeistDoors.getDoors(heist)
+    return heist.doors or {}
 end
 
 function HeistDoors.isDoorBypassed(heist, doorId)
@@ -73,6 +63,11 @@ function HeistDoors.markDoorBypassed(heist, doorId, playerId)
     door.opened = true
     door.openedBy = playerId
 
+    if door.actor and door.actor:isValid() then
+        DeleteEntity(door.actor)
+        door.mesh = nil
+    end
+
     heist:broadcastEvent("HeistDoorOpened", {
         heistId = heist.id,
         doorId = doorId,
@@ -81,7 +76,6 @@ function HeistDoors.markDoorBypassed(heist, doorId, playerId)
 
     if HeistDoors.areAllDoorsBypassed(heist) and heist:canTransitionTo(HeistStates.VAULT_LOCKED) then
         heist:transitionTo(HeistStates.VAULT_LOCKED)
-        heist:broadcastState()
     end
 end
 
@@ -104,8 +98,8 @@ end
 
 function HeistDoors.cleanup(heist)
     for _, door in pairs(heist.doors) do
-        if door.mesh and door.mesh:IsValid() then
-            DeleteEntity(door.mesh)
+        if door.actor and door.actor:IsValid() then
+            DeleteEntity(door.actor)
         end
     end
 
