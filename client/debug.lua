@@ -3,7 +3,7 @@ if not Config.Debug.enabled then
 end
 
 while not DebugCommand do
-    Wait(50)
+    Timer.Wait(100)
 end
 
 local LOOT_INTERACT_RANGE = 500.0

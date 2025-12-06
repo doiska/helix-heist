@@ -22,16 +22,28 @@ Config.Banks = {
                 { id = "lockpick", amount = 5 },
                 { id = "laptop",   amount = 1 }
             },
-            location = Vector(-1396.9, 14074.70, -315.84)
+            location = Vector(-4700, 14520.0, -390.0)
         },
         security = {
             doors = {
                 {
                     entity = "/QuietRuntimeEditor/UserContent/StaticMeshes/Primitives/SM_Cube.SM_Cube",
                     lockType = "lockpick",
-                    location = Vector(-4103.445, 12922.556, -390.0),
+                    location = Vector(-5530.526, 15580.0, -330.0),
                     rotation = Rotator(0, 0, 0),
-                    scale = Vector(4, 0.8, 2.2),
+                    scale = Vector(1.05, 0.04, 2.28),
+                    interact = {
+                        Text = "Open Garage",
+                        SubText = "Press E to start lockpicking",
+                        Input = '/Game/Input/Actions/IA_Interact.IA_Interact',
+                    }
+                },
+                {
+                    entity = "/QuietRuntimeEditor/UserContent/StaticMeshes/Primitives/SM_Cube.SM_Cube",
+                    lockType = "lockpick",
+                    location = Vector(-4720.526, 15660.0, -320.0),
+                    rotation = Rotator(0, 0, 0),
+                    scale = Vector(1.05, 0.04, 2.12),
                     interact = {
                         Text = "Open Garage",
                         SubText = "Press E to start lockpicking",
