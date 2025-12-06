@@ -5,6 +5,11 @@
 ---@field doors? { id: string, location: Vector }[]
 ---@field vault? { location: Vector, loot: { id: string, location: Vector }[] }
 CurrentHeist = {}
+HeistUI = WebUI("heist-ui", "heist/ui/dist/index.html", 0)
+
+HeistUI.Browser.OnLoadCompleted:Add(HeistUI.Browser, function()
+    HeistUI:SendEvent('Loaded')
+end)
 
 RegisterClientEvent("HeistUpdate", function(data)
     if not data or data.state == "CLEANUP" then
@@ -34,6 +39,15 @@ RegisterClientEvent("HeistUpdate", function(data)
             })
         end
     end
+
+    HeistUI:SendEvent('HeistUpdate', data)
 end)
 
+function onShutdown()
+    if HeistUI then
+        HeistUI:Destroy()
+    end
+end
+
+_G.HeistUI = HeistUI
 _G.CurrentHeist = CurrentHeist
