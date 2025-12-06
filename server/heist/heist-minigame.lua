@@ -7,16 +7,19 @@ function HeistMinigame.init(heist)
         HeistMinigame.createMinigame(heist, "vault_door", "vault", config.vault.minigame)
     end
 
-    if config.security and config.security.doors then
-        for i, door in ipairs(config.security.doors) do
-            local doorId = "door_" .. i
-            local minigameConfig = {
-                type = "lockpick",
-                lockpick = { maxAttempts = 3 }
-            }
+    local doors = HeistDoors.getDoors(heist)
 
-            HeistMinigame.createMinigame(heist, doorId, "door", minigameConfig)
-        end
+    if not doors or #doors == 0 then
+        return
+    end
+
+    for doorId, door in ipairs(doors) do
+        local minigameConfig = {
+            type = "lockpick",
+            lockpick = { maxAttempts = 3 }
+        }
+
+        HeistMinigame.createMinigame(heist, doorId, "door", minigameConfig)
     end
 end
 
