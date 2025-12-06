@@ -30,9 +30,11 @@ DebugCommand("heist", function()
 
         if lobby.status == 'error' then
             print(lobby.message or "Response returned but no content.")
+            return
         end
 
         HeistUI:SendEvent("ShowLobby", lobby)
+        HeistUI:SetInputMode(1)
     end)
 end)
 
@@ -59,13 +61,7 @@ DebugCommand("heist:join", function(args)
 end)
 
 DebugCommand("heist:leave", function()
-    TriggerCallback("LeaveHeist", function(result)
-        if result.status == "success" then
-            print("Left heist")
-        elseif result.status == "error" then
-            print(result.message)
-        end
-    end)
+    TriggerCallback("LeaveHeist")
 end)
 
 DebugCommand("heist:loot-collect", function(args)
