@@ -9,11 +9,12 @@ function HeistMinigame.init(heist)
 
     local doors = HeistDoors.getDoors(heist)
 
-    if not doors or #doors == 0 then
+    if not doors then
+        print("No doors found, no door minigames being created.")
         return
     end
 
-    for doorId, door in ipairs(doors) do
+    for doorId, door in pairs(doors) do
         local minigameConfig = {
             type = "lockpick",
             lockpick = { maxAttempts = 3 }
@@ -144,7 +145,7 @@ function HeistMinigame.handleLockTimeout(heist, minigameId)
     minigame.progress.lockedAt = nil
     heist.minigameTimers[minigameId] = nil
 
-    heist:broadcastEvent("HeistMinigameTimeout", {
+    heist:broadcastEvent("client.HeistMinigameTimeout", {
         heistId = heist.id,
         minigameId = minigameId,
         playerId = playerId,
@@ -172,7 +173,7 @@ function HeistMinigame.validate(heist, playerId, minigameId, attempt)
     end
 
     if minigame.solved then
-        return { status = "error", message = "Already solved by " .. minigame.solvedBy }
+        return { status = "error", message = "Already solved" }
     end
 
     local progress = minigame.progress

@@ -179,14 +179,18 @@ RegisterCallback("StartMinigame", function(player, minigameId)
     }
 end)
 
-RegisterCallback("SubmitMinigameAttempt", function(player, minigameId, attempt)
+RegisterCallback("SubmitMinigameAttempt", function(player, data)
     local heist = HeistManager:getPlayerHeist(player)
 
     if not heist then
         return { status = "error", message = "Not in a heist" }
     end
 
-    return HeistMinigame.validate(heist, player, minigameId, attempt)
+    if not data.minigameId or not data.attempt then
+        return { status = "error", message = "Invalid data" }
+    end
+
+    return HeistMinigame.validate(heist, player, data.minigameId, data.attempt)
 end)
 
 RegisterCallback("StartLootCollection", function(player, lootIndex)
