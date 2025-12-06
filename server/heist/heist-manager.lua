@@ -79,13 +79,9 @@ function HeistManager:joinHeist(player, heistId)
 
     self.playerHeists[player] = heistId
 
-    heist:broadcastEvent('HeistUpdate', {
-        heistId = heistId,
-        state = heist.state,
-        participants = heist.participants,
-        leader = heist.leader,
-        canJoin = heist.state == HeistStates.IDLE or heist.state == HeistStates.PREPARED
-    })
+    if #heist.participants == heist.config.start.minPlayers then
+        heist:transitionTo(HeistStates.PREPARED)
+    end
 
     return true, nil
 end
@@ -110,10 +106,9 @@ function HeistManager:leaveHeist(player, reason)
     heist:removeParticipant(player)
     self.playerHeists[player] = nil
 
-    heist:broadcastState()
-
-    if heist.state == HeistStates.FAILED or #heist.participants == 0 then
+    if #heist.participants == 0 then
         self:removeHeist(heistId)
+        return true, nil
     end
 
     return true, nil
@@ -155,12 +150,7 @@ function HeistManager:startHeist(player)
 
     heist:transitionTo(HeistStates.ENTRY)
 
-    for _, participant in ipairs(heist.participants) do
-        SetEntityCoords(GetPlayerPawn(participant), heist.config.start.location)
-    end
-
     heist:notify("Heist started, time is ticking!")
-
     return true, "Started!"
 end
 
@@ -178,7 +168,7 @@ function HeistManager:removeHeist(heistId)
         end
     end
 
-    heist:cleanup()
+    heist:transitionTo(HeistStates.FAILED, "All participants left")
     self.activeHeists[heistId] = nil
 end
 
@@ -214,10 +204,10 @@ function HeistManager:cleanup(heist)
     HeistDoors.cleanup(heist)
 end
 
-_G.HeistManager = HeistManager
-
 function onShutdown()
     for _, heist in pairs(HeistManager.activeHeists) do
         HeistManager:cleanup(heist)
     end
 end
+
+_G.HeistManager = HeistManager

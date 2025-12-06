@@ -79,15 +79,17 @@ function BankHeist:broadcastEvent(event, payload)
     end
 end
 
-function BankHeist:notify(text)
+function BankHeist:notify(text, type)
+    type = type or "success"
+
     for _, player in ipairs(self.participants) do
         if not player then
             print("Player not found.")
             return
         end
 
+        TriggerClientEvent(player, 'QBCore:Notify', text, type)
         -- I'm not sure why the notify export was throwing errors, went with the event instead
-        TriggerClientEvent(player, 'QBCore:Notify', text, 'success')
         -- exports['qb-core']:Notify(player, text, "success")
     end
 end
@@ -183,6 +185,10 @@ end
 
 function BankHeist:onStateEnter(newState, _oldState)
     if newState == HeistStates.ENTRY then
+        for _, participant in ipairs(self.participants) do
+            SetEntityCoords(GetPlayerPawn(participant), self.config.start.location)
+        end
+
         if HeistDoors.getTotalDoors(self) == 0 then
             self:transitionTo(HeistStates.VAULT_LOCKED)
             return
@@ -250,10 +256,6 @@ function BankHeist:addParticipant(playerId)
 
     table.insert(self.participants, playerId)
 
-    if #self.participants == self.config.start.minPlayers then
-        self:transitionTo(HeistStates.PREPARED)
-    end
-
     return true
 end
 
@@ -269,11 +271,6 @@ function BankHeist:removeParticipant(playerId)
         if minigame.progress.lockedBy == playerId then
             HeistMinigame.releaseLock(self, minigame, playerId)
         end
-    end
-
-    if #self.participants == 0 then
-        self:transitionTo(HeistStates.FAILED, "All participants left")
-        return
     end
 
     if playerId == self.leader and #self.participants ~= 0 then
