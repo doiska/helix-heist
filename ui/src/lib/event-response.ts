@@ -1,4 +1,4 @@
-type CallbackResponse<Data = never> =
+export type CallbackResponse<Data = never> =
   | {
       status: "success";
       data: Data;
@@ -15,7 +15,6 @@ export function parseCallbackResponse<Output = never>(
 
   try {
     if (!response.args) {
-      // imo it should always have a status
       throw new Error("No status found in callback response");
     }
 
