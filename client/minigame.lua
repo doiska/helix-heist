@@ -1,11 +1,21 @@
-while not UiServerCallbackProxy do
-    Timer.Wait(100)
-end
-
 HeistUI:RegisterEventHandler(
     "ui.SubmitMinigameAttempt",
     function(...)
-        TriggerCallback("SubmitMinigameAttempt", function() end, ...)
+        TriggerCallback("SubmitMinigameAttempt", function(result)
+            if result.status ~= "success" then
+                print("Error: " .. (result.message or "Unknown"))
+                return
+            end
+
+            if result.data and (result.data.solved or result.data.exhausted) then
+                HeistUI:SendEvent("HideMinigame")
+                HeistUI:SetInputMode(0)
+                return
+            end
+
+            HeistUI:SendEvent("MinigameAttemptResult", result)
+            HeistUI:SetInputMode(1)
+        end, ...)
     end
 )
 
@@ -20,14 +30,9 @@ RegisterClientEvent("client.StartMinigame", function(data)
             return
         end
 
-        HeistUI:SendEvent("UpdateMinigame", result)
+        HeistUI:SendEvent("StartMinigame", result)
         HeistUI:SetInputMode(1)
     end, data.doorId)
-end)
-
-RegisterClientEvent("client.UpdateMinigame", function(result)
-    HeistUI:SendEvent("UpdateMinigame", result)
-    HeistUI:SetInputMode(1)
 end)
 
 RegisterClientEvent("client.HideMinigame", function()

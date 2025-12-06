@@ -114,6 +114,7 @@ RegisterCallback("StartMinigame", function(player, minigameId)
     end
 
     local minigame = heist.minigames[minigameId]
+
     if not minigame then
         return { status = "error", message = "Minigame not found" }
     end
@@ -190,7 +191,42 @@ RegisterCallback("SubmitMinigameAttempt", function(player, data)
         return { status = "error", message = "Invalid data" }
     end
 
-    return HeistMinigame.validate(heist, player, data.minigameId, data.attempt)
+    local result = HeistMinigame.validate(heist, player, data.minigameId, data.attempt)
+
+    if result.status ~= "success" then
+        return result
+    end
+
+    local minigame = heist.minigames[data.minigameId]
+
+    if not minigame then
+        return result
+    end
+
+    local attemptsRemaining = result.data.attemptsRemaining
+
+    if result.data.solved then
+        TriggerClientEvent(player, 'QBCore:Notify', "You cracked it! Move in.", "success")
+    elseif result.data.exhausted then
+        TriggerClientEvent(player, 'QBCore:Notify', "You failed, no attempts left.", "error")
+    end
+
+    return {
+        status = "success",
+        data = {
+            id = minigame.id,
+            type = minigame.type,
+            minigameType = minigame.minigameType,
+            maxAttempts = minigame.maxAttempts,
+            timeLimit = minigame.timeLimit,
+            attemptsRemaining = attemptsRemaining,
+            solved = result.data.solved,
+            complete = result.data.complete,
+            message = result.data.message,
+            attempt = result.data,
+            exhausted = result.data.exhausted
+        }
+    }
 end)
 
 RegisterCallback("StartLootCollection", function(player, lootIndex)
