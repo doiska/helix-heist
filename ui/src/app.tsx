@@ -37,10 +37,16 @@ export function App() {
     }
   });
 
-  useUIEvent<LobbyState[] | null>("ShowLobby", (result) => {
+  useUIEvent<{ lobbies: LobbyState[] } | null>("ShowLobby", (result) => {
     if (result.status === "success") {
-      console.log(JSON.stringify(result));
-      setLobbies(result.data);
+      // Would be great to have __jsontype (cjson has it) in SendEvent to prevent this edge case, or is there any workaround?
+      // In this case, lobbies is a empty table, that should be treated as empty array
+      const normalizedLobbies =
+        JSON.stringify(result.data?.lobbies) === "{}"
+          ? []
+          : result.data?.lobbies;
+
+      setLobbies(normalizedLobbies ?? []);
     }
   });
 
