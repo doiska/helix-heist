@@ -63,7 +63,7 @@ function HeistDoors.markDoorBypassed(heist, doorId, playerId)
     door.opened = true
     door.openedBy = playerId
 
-    if door.actor and door.actor:isValid() then
+    if door.actor ~= nil and door.actor:IsValid() then
         DeleteEntity(door.actor)
         door.mesh = nil
     end
