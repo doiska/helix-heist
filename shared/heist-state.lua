@@ -8,5 +8,4 @@ HeistStates = {
     ESCAPE = "ESCAPE",             -- vault auto-close after X seconds
     COMPLETE = "COMPLETE",         -- players have completed the heist by escaping from radius
     FAILED = "FAILED",             -- players have somehow failed: ran out of time
-    CLEANUP = "CLEANUP"            -- everything cleaned up, removing players
 }
