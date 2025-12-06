@@ -4,6 +4,7 @@
 ---| 2 # GameAndUI_MouseFocus (game + UI, mouse focus on UI)
 
 ---@class WebUIInstance
+---@field Browser any
 ---@field Name string
 ---@field Path string
 ---@field InputMode WebUIInputMode
