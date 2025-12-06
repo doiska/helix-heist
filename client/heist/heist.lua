@@ -1,28 +1,25 @@
 ---@class ClientHeist
 ---@field id string
----@field state string
+---@field state HeistStates
 ---@field loot table
 ---@field doors? { id: string, location: Vector }[]
 ---@field vault? { location: Vector, loot: { id: string, location: Vector }[] }
-CurrentHeist = {}
-HeistUI = WebUI("heist-ui", "heist/ui/dist/index.html", 0)
+---
+---@type ClientHeist | nil
+local CurrentHeist = nil
+local HeistUI = WebUI("heist-ui", "heist/ui/dist/index.html", 0)
 
 HeistUI.Browser.OnLoadCompleted:Add(HeistUI.Browser, function()
     HeistUI:SendEvent('Loaded')
 end)
 
-RegisterClientEvent("HeistUpdate", function(data)
-    if not data or data.state == "CLEANUP" then
+RegisterClientEvent("HeistUpdate", function(newHeistState)
+    if not newHeistState or newHeistState.state == "FAILED" or newHeistState.state == "COMPLETE" then
         CurrentHeist = nil
         return
     end
 
-    CurrentHeist = {
-        id = data.heistId,
-        state = data.state,
-        doors = data.doors,
-        vault = data.vault
-    }
+    CurrentHeist = newHeistState
 
     if CurrentHeist.state == HeistStates.ENTRY and CurrentHeist.doors then
         for _, door in pairs(CurrentHeist.doors) do
@@ -40,7 +37,7 @@ RegisterClientEvent("HeistUpdate", function(data)
         end
     end
 
-    HeistUI:SendEvent('HeistUpdate', data)
+    HeistUI:SendEvent('HeistUpdate', newHeistState)
 end)
 
 function onShutdown()
