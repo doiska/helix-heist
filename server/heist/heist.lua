@@ -102,7 +102,13 @@ function BankHeist:broadcastState()
     }
 
     if self.state == HeistStates.ENTRY then
-        payload.doors = HeistDoors.getClientDoors(self)
+        payload.doors = HELIXTable.map(HeistDoors.getDoors(self), function(door)
+            return {
+                id = door.id,
+                actor = door.actor,
+                location = door.config.location
+            }
+        end)
     end
 
     if self.state == HeistStates.VAULT_LOCKED then
@@ -318,7 +324,7 @@ function BankHeist:alertPolice(loud)
 
     -- The QBCore police job doesn't have alerts implemented yet, I'm using the Notify to replace it
     -- https://github.com/hypersonic-laboratories/qbcore-rp/blob/8a5bb60d34852a3fd6d538e8b1210ac689821d57/qb-policejob/Client/main.lua#L180
-    local policeOfficers = QBCore.Functions.GetPlayersOnDuty("police")
+    local policeOfficers = exports['qb-core']:GetPlayersOnDuty("police")
 
     for _, playerSource in ipairs(policeOfficers) do
         exports['qb-core']:Player(playerSource, 'Notify', 'Bank ' .. self.id .. ' is being robbed!')
